@@ -1,0 +1,3 @@
+{"method": "initialize-buffer", "params": {"buffer-id": "foo.rb", "buffer-contents": "1 + 1"}}
+{"method": "buffer-contents", "params": {"buffer-id": "foo.rb"}}
+{"method": "sexp-at-point", "params": {"buffer-id": "foo.rb", "line-number": 1, "column-number": 1}}

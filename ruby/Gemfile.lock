@@ -1,0 +1,10 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    ruby-prof (0.15.8)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  ruby-prof
