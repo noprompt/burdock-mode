@@ -1,0 +1,227 @@
+module Rhubarb
+  module AST
+    module Zipper
+      ZipperError = Class.new(StandardError)
+
+      class Location
+        # @!attribute [r] path
+        #   @return [Rhubarb::AST::Zipper::Location] the path (from
+        #     the root) to this location.
+        #   @return [nil] if this location is at the root.
+        attr_reader :path
+
+        # @!attribute [r] node
+        #   @return [AST::Node] the value of the node at this
+        #     location
+        attr_reader :node
+
+        # @!attribute [r] lefts
+        #   @return [Array] the siblings to the left at this
+        #     location
+        attr_reader :lefts
+
+        # @!attribute [r] rights
+        #   @return [Array] the siblings to the right at this
+        #     location
+        attr_reader :rights
+
+        # @param [AST::Node] node
+        # @param [Rhubarb::AST::Zipper::Location, nil] path
+        # @param [Array] lefts
+        # @param [Array] rigths
+        def initialize(node, path, lefts = [], rights = [])
+          @node = node
+          @path = path
+          @lefts = lefts
+          @rights = rights
+        end
+
+        def ==(other)
+          case other
+          when Location
+            other.node == self.node &&
+              other.path == self.path &&
+                other.lefts == self.lefts &&
+                  other.rights == self.rights
+          else
+            false
+          end
+        end
+
+        # @return [Boolean]
+        def root?
+          self.path.nil?
+        end
+
+        # @return [Boolean]
+        def branch?
+          self.node.is_a?(::AST::Node)
+        end
+
+        # @return [Array]
+        def children
+          if branch?
+            self.node.children
+          else
+            fail ZipperError, "`children' may only be called on a branch location (when the value of `node' is an AST::Node)"
+          end
+        end
+
+        # Move up to the parent location applying any changes to the
+        # node at this location. This method is a noop if this
+        # location is the root location.
+        #
+        # @return [Rhubarb::AST::Zipper::Location]
+        def up
+          if root?
+            fail ZipperError, "`up' may not be called on the root location"
+          else
+            new_children = self.lefts.to_a + [self.node] + self.rights.to_a
+            parent_node = self.path.node
+            node = parent_node.updated(nil, new_children)
+
+            self.class.new(node, self.path.path, self.path.lefts, self.path.rights)
+          end
+        end
+
+        # Move down from the parent location. This method is a noop
+        # if this location is not a branch node (e.g. an `AST::Node`).
+        #
+        # @return [Rhubarb::AST::Zipper::Location]
+        def down
+          if branch?
+            head, *rights = children
+            lefts = []
+            self.class.new(head, self, lefts, rights)
+          else
+            fail ZipperError, "`down' may only be called on a branch location (when the value of `node' is an AST::Node)"
+          end
+        end
+
+        # Move to the node right of this location.
+        #
+        # @return [Rhubarb::AST::Zipper::Location]
+        def right
+          if self.rights.any?
+            node, *new_rights = self.rights
+            new_lefts = self.lefts + [self.node]
+
+            self.class.new(node, self.path, new_lefts, new_rights)
+          else
+            # @note I don't like this...
+            nil
+          end
+        end
+
+        # Move to the node left of this location.
+        #
+        # @return [Rhubarb::AST::Zipper::Location]
+        def left
+          if self.lefts.any?
+            *new_lefts, node = self.lefts 
+            new_rights = [self.node] + self.rights
+
+            self.class.new(node, self.path, new_lefts, new_rights)
+          else
+            # @note I don't like this...
+            nil
+          end
+        end
+
+        # @yieldparam [Object] node the node at this location.
+        # @yieldreturn [Object] the new node at this locaiton.
+        # @return [Rhubarb::AST::Zipper::Location]
+        def edit
+          new_node = yield self.node
+
+          self.class.new(new_node, self.path, self.lefts, self.rights)
+        end
+
+        # Replace the node at this location.
+        #
+        # @return [Rhubarb::AST::Zipper::Location]
+        def replace(x)
+          edit { x }
+        end
+
+        # Delete the current node.
+        #
+        # If there are any nodes to the right of this location,
+        # delete the current node and move to the node to the right
+        # of this one.
+        #
+        # If there are no nodes to the right of this location but
+        # there are nodes to the left, delete the current node and
+        # move to the left of this one.
+        #
+        # If there are no nodes to the left or right of this location
+        # then delete the current node and move up to the parent.
+        #
+        # @return [Rhubarb::AST::Zipper::Location]
+        def delete
+          if root?
+            fail ZipperError, "the root not may not be deleted"
+          else
+            if self.rights.any?
+              new_node, *new_rights = self.rights
+
+              self.class.new(new_node, self.path, self.lefts, new_rights)
+            else
+              if self.lefts.any?
+                *new_lefts, new_node = self.lefts
+
+                self.class.new(new_node, self.path, new_lefts, self.rights)
+              else
+                up_node = self.path.node
+                new_up_node = up_node.updated(nil, [])
+
+                if self.path.root?
+                  self.class.new(new_up_node, nil, nil, nil)
+                else
+                  parent_path = self.path.path
+                  new_lefts = parent_path.left
+                  new_rights = parent_path.rights
+
+                  self.class.new(new_up_node, parent_path, new_lefts, new_rights)
+                end
+              end
+            end
+          end
+        end
+
+        # Insert a node to the "left" of this location.
+        # @return [Rhubarb::AST::Zipper::Location]
+        def insert_left(x)
+          if root?
+            fail ZipperError, "insertion is not permitted at the root"
+          else
+            new_lefts = self.lefts + [x]
+
+            self.class.new(self.node, self.path, new_lefts, self.rights)
+          end
+        end
+
+        # Insert a node to the "right" of this location.
+        # @return [Rhubarb::AST::Zipper::Location]
+        def insert_right(x)
+          if root?
+            fail ZipperError, "insertion is not permitted at the root"
+          else
+            new_rights = self.rights + [x]
+
+            self.class.new(self.node, self.path, self.lefts, new_rights)
+          end
+        end
+
+        # @return [Rhubarb::AST::Zipper::Location]
+        def root
+          if root?
+            self
+          else
+            up
+          end
+        end
+      end # Location
+    end # Zipper
+  end # AST
+end
