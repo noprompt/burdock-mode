@@ -305,9 +305,7 @@ module Rhubarb
         def prewalk(&block)
           new_location =
             if self.branch?
-              sub_location = self.edit do |node|
-                yield node
-              end
+              sub_location = self.edit(&block)
 
               if sub_location.branch?
                 sub_location
@@ -317,9 +315,7 @@ module Rhubarb
                 sub_location
               end
             else
-              sub_location = self.edit do |node|
-                yield node
-              end
+              self.edit(&block)
             end
 
           maybe_right = new_location.right
@@ -335,24 +331,33 @@ module Rhubarb
           end
         end
 
+        # Applies `block` to each node of the tree in post-order
+        # fashion returning.
+        #
+        # @yieldparam [AST::Node, Object]
+        # @return [Rhubarb::AST::Zipper::Location] the root location
+        #   after applying the prewalk function to each node.
         def postwalk(&block)
-          if self.branch?
-            self.down.postwalk(&block)
-
-            yield self
-
-            maybe_right = self.right
-
-            if maybe_right
-              maybe_right.postwalk(&block)
+          new_location =
+            if self.branch?
+              sub_location =
+                self
+                .down
+                .postwalk(&block)
+                .edit(&block)
+            else
+              self.edit(&block)
             end
+
+          maybe_right = new_location.right
+
+          if maybe_right
+            maybe_right.postwalk(&block)
           else
-            yield self
-
-            maybe_right = self.right
-
-            if maybe_right
-              maybe_right.postwalk(&block)
+            if new_location.root?
+              new_location
+            else
+              new_location.up
             end
           end
         end
