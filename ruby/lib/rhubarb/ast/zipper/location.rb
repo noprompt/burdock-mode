@@ -214,6 +214,7 @@ module Rhubarb
         end
 
         # Insert a node to the "left" of this location.
+        #
         # @return [Rhubarb::AST::Zipper::Location]
         def insert_left(x)
           if root?
@@ -226,6 +227,7 @@ module Rhubarb
         end
 
         # Insert a node to the "right" of this location.
+        #
         # @return [Rhubarb::AST::Zipper::Location]
         def insert_right(x)
           if root?
@@ -340,8 +342,7 @@ module Rhubarb
         def postwalk(&block)
           new_location =
             if self.branch?
-              sub_location =
-                self
+              self
                 .down
                 .postwalk(&block)
                 .edit(&block)
@@ -358,6 +359,36 @@ module Rhubarb
               new_location
             else
               new_location.up
+            end
+          end
+        end
+
+        # At return an instance of Enumerator which produces a stream
+        # of nodes reachable from this location in level-order
+        # fashion.
+        #
+        # @return [Enumerator]
+        def to_enum
+          Enumerator.new do |yielder|
+            if self.branch?
+              queue = [self]
+
+              loop do
+                if queue.empty?
+                  break
+                else
+                  location = queue.shift
+
+                  if location.branch?
+                    yielder << location.node
+                    queue.concat(location.child_locations)
+                  else
+                    yielder << location.node
+                  end
+                end
+              end
+            else
+              yielder << self.node
             end
           end
         end
