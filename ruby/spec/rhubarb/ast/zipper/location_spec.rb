@@ -225,4 +225,44 @@ RSpec.describe Rhubarb::AST::Zipper::Location do
     end
   end
 
+  describe "#child_locations" do
+    let(:node) do
+      Rhubarb::AST.from_string("1 + 2")
+    end
+
+  end
+
+  describe "#left_locations" do
+    let(:node) do
+      Rhubarb::AST.from_string("[1, 2, 3, 4]")
+    end
+
+    let(:location) do
+      Rhubarb::AST::Zipper.from_node(node).down.rightmost
+    end
+
+    it "produces nodes in the same order as #lefts" do
+      expected_lefts = location.lefts
+      actual_lefts = location.left_locations.map(&:node)
+      expect(actual_lefts).to eq(expected_lefts)
+    end
+  end
+
+  describe "#right_locations" do
+    let(:node) do
+      Rhubarb::AST.from_string("[1, 2, 3, 4]")
+    end
+
+    let(:location) do
+      Rhubarb::AST::Zipper.from_node(node).down
+    end
+
+    it "produces nodes in the same order as #rights" do
+      expected_rights = location.rights
+      actual_rights = location.right_locations.map(&:node)
+      expect(actual_rights).to eq(expected_rights)
+    end
+
+  end
+
 end

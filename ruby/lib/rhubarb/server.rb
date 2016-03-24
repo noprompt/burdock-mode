@@ -1,4 +1,7 @@
 require "json"
+require "securerandom"
+require "yajl"
+
 
 require_relative "actions/echo"
 require_relative "actions/expression_at_point"
@@ -8,7 +11,15 @@ require_relative "result"
   
 
 module Rhubarb
+  HandlerMissingError = Class.new(StandardError)
+
   class Server
+
+    attr_reader :handlers
+
+    def initialize(handlers = Rhubarb::Defaults.handlers)
+      @handlers = handlers
+    end
 
     # @return [nil]
     def run
@@ -21,41 +32,42 @@ module Rhubarb
     # @param [String] request
     # @return [String]
     def handle_request(request)
-      Rhubarb::Result.try do
-        message = parse_message(request)
-        handle_message(message)
-      end.otherwise do |error|
-        Rhubarb::Response.from_exception(error)
-      end.then do |hash|
-        hash.to_json
-      end.value
+      response =
+        begin
+          message = parse_message(request)
+          handle_message(message)
+        rescue => error
+          Rhubarb::Response.from_exception(error)
+        end
+      response.merge({ id: message["id"] }).to_json
     end
 
     # @param [Hash] message
     # @return [Hash]
     def handle_message(message)
-      Rhubarb::Result.try do
-        id = message.fetch("id")
-        method = message.fetch("method")
-        params = message.fetch("params")
+      id = message.fetch("id")
+      method = message.fetch("method")
+      params = message.fetch("params")
 
-        case method
-        when "rhubarb_echo"
-          Rhubarb::Actions::Echo.call(message)
-        when "rhubarb_expression_at_point"
-          Rhubarb::Actions::ExpressionAtPoint.call(message)
-        when "rhubarb_scope_at_line"
-          Rhubarb::Actions::ScopeAtLine.call(message)
-        end
-      end.otherwise do |error|
+      maybe_handler = self.handlers.fetch(method, nil)
+
+      if maybe_handler
+        maybe_handler.call(message)
+      else
+        error_message = "No handler for method type `%s'" % [method]
+        error = Rhubarb::HandlerMissingError.new(error_message)
         Rhubarb::Response.from_exception(error)
-      end.value
+      end
+    rescue => error
+      Rhubarb::Response.from_exception(error)
     end
 
     # @param [String] request
-    # @return [String]
+    # @return [Hash]
     def parse_message(request)
-      JSON.parse(request)
+      json = JSON.parse(request)
+      json["id"] ||= SecureRandom.uuid
+      json
     end
 
   end # Server

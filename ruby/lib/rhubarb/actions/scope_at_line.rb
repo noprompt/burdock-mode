@@ -7,9 +7,9 @@ module Rhubarb
       # @param [Hash] message
       # @return [Hash]
       def self.call(message)
-        params = message.fetch(:params)
-        line_number = params.fetch(:line_number)
-        source = params.fetch(:source)
+        params = message.fetch("params")
+        line_number = params.fetch("line-number")
+        source = params.fetch("source")
 
         processor = Rhubarb::Actions::ScopeAtLine::Processor.new(line_number)
         node = Rhubarb::AST.from_string(source)
@@ -19,14 +19,14 @@ module Rhubarb
           ruby_source = Unparser.unparse(maybe_node)
 
           {
-            method: "rhubarb.source",
+            method: "rhubarb/source",
             params: {
               source: ruby_source
             }
           }
         else
           {
-            method: "rhubarb.source",
+            method: "rhubarb/source",
             params: {
               source: nil
             }
@@ -37,31 +37,36 @@ module Rhubarb
       # @return [Array]
       def self.required_parameters
         [
-          :line_number,
-          :source
+          "line-number",
+          "source"
         ]
       end
 
-      # @return [Hash]
-      def self.documentations
-        {
-          method: "rhubarb.scope-at-line.documentation",
-          params: {
-            fields: [
-              {
-                description: "Ruby source code.",
-                name: "source",
-                type: "string",
-              },
-              {
-                description: "The line number to reference.",
-                name: "line-number",
-                type: "number",
-              }
-            ]
+      module Documentation
+        # @return [Hash]
+        def self.call(_message)
+          {
+            method: "rhubarb/documentation",
+            params: {
+              fields: [
+                {
+                  description: "Ruby source code.",
+                  name: "source",
+                  required: true,
+                  type: "string",
+                },
+                {
+                  description: "The line number to reference.",
+                  name: "line-number",
+                  required: true,
+                  type: "number",
+                }
+              ]
+            }
           }
-        }
-      end
+        end
+      end # Documentation
+
     end # ScopeAtLine
   end # Actions
 end # Rhubarb

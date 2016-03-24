@@ -1,5 +1,6 @@
 require "unparser"
 
+
 require_relative "../ast"
 require_relative "expression_at_point/processor"
 
@@ -20,25 +21,31 @@ module Rhubarb
 
         if maybe_node
           expression = maybe_node.location.expression
+          start_line = expression.first_line
           start_point = expression.begin_pos
           end_point = expression.end_pos
+          end_line = expression.last_line
 
           source = Unparser.unparse(maybe_node)
 
           {
-            method: "rhubarb_source",
+            method: "rhubarb/source",
             params: {
+              end_line: end_line,
               end_point: end_point,
               source: source,
+              start_line: start_line,
               start_point: start_point
             }
           }
         else
           {
-            method: "rhubarb_source",
+            method: "rhubarb/source",
             params: {
+              end_line: nil,
               end_point: nil,
               source: nil,
+              start_line: nil,
               start_point: nil
             }
           }
@@ -49,10 +56,11 @@ module Rhubarb
       # @return [Array]
       def self.required_parameters
         [
-          :point,
-          :source,
+          "point",
+          "source",
         ]
       end
+
     end # ExpressionAtPoint
   end # Actions
 end # Rhubarb

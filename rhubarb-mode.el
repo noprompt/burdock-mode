@@ -12,8 +12,11 @@
 ;;; TODO: Rename lvar
 ;;; TODO: Extract YARD
 
+(require 'ruby-mode)
+(require 'inf-ruby)
 (require 'json)
 (require 'color)
+(require 'dash)
 
 (defvar rhubarb-mode-map
   (make-sparse-keymap)
@@ -185,6 +188,11 @@ exists."
     (when rhubarb-highlight-sexp
       (rhubarb-move-sexp-overlay begin-pos end-pos))))
 
+(defun rhubarb-handle-goto-char (rhubarb-response)
+  (let* ((params (plist-get rhubarb-response :params))
+	 (pos (plist-get params :pos)))
+    (goto-char pos)))
+
 (defun rhubarb-handle-edit-delete-region (rhubarb-response)
   (let* ((params (plist-get rhubarb-response :params))
 	 (begin-pos (plist-get params :begin_pos))
@@ -224,6 +232,7 @@ exists."
 (rhubarb-add-response-listener "edit-replace-region" 'rhubarb-handle-edit-replace-region)
 (rhubarb-add-response-listener "edit-delete-region" 'rhubarb-handle-edit-delete-region)
 (rhubarb-add-response-listener "edit-insert" 'rhubarb-handle-edit-insert)
+(rhubarb-add-response-listener "goto-char" 'rhubarb-handle-goto-char)
 
 ;; ---------------------------------------------------------------------
 ;; Response parsing
@@ -394,8 +403,9 @@ exists."
   (when (or (not rhubarb-process)
 	    (not (process-live-p rhubarb-process)))
     (let* ((process-connection-type nil) ;; Use a pipe.
-	   (process (start-process "*rhubarb*" nil
-				   "ruby" "/Users/noprompt/git/noprompt/rhubarb-mode/ruby/rhubarb.rb")))
+	   (process (let ((default-directory "/Users/noprompt/git/noprompt/rhubarb-mode/ruby/"))
+		      (start-process "*rhubarb*" nil
+				     "rbenv" "exec" "bundle" "exec" "ruby" "rhubarb.rb"))))
       (set-process-filter process rhubarb-process-filter)
       (setq rhubarb-process process))))
 
@@ -511,6 +521,12 @@ exists."
 					  (buffer-name))))
     (rhubarb-load-from-temp-file)))
 
+;; ---------------------------------------------------------------------
+;; Structured navigation
+
+(defun rhubarb-forward-node ()
+  (interactive)
+  (rhubarb-send-message "forward-node"))
 
 ;; ---------------------------------------------------------------------
 ;; Structured editing
@@ -611,6 +627,12 @@ exists."
   (define-key evil-normal-state-local-map "WL" 'rhubarb-structured-wrap-lambda-call)
   (define-key evil-normal-state-local-map "D" 'rhubarb-structured-forward-kill)
   (define-key evil-normal-state-local-map ",l" 'rhubarb-load-file))
+
+(define-key rhubarb-mode-map
+  (kbd "C-c C-b") 'rhubarb-repl-clear-buffer)
+
+(define-key inf-ruby-mode-map
+  (kbd "C-c C-b") 'rhubarb-repl-clear-buffer)
 
 (add-hook 'rhubarb-mode-hook 'noprompt-define-evil-keys-for-rhubarb-mode)
 

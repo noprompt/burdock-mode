@@ -1,12 +1,10 @@
 source "https://rubygems.org"
 
 gem "parser"
-
 gem "pry"
-
 gem "unparser"
-
 gem "yard"
+gem "yajl-ruby"
 
 group :development do
   gem "rspec"

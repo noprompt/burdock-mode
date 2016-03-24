@@ -113,6 +113,18 @@ module Rhubarb
           end
         end
 
+        # Move to the node rightmost of this location.
+        #
+        # @return [Rhubarb::AST::Zipper::Location]
+        def rightmost
+          maybe_right = self.right
+          if maybe_right
+            maybe_right.rightmost
+          else
+            self
+          end
+        end
+
         # Move to the node left of this location.
         #
         # @return [Rhubarb::AST::Zipper::Location]
@@ -125,6 +137,18 @@ module Rhubarb
           else
             # @note I don't like this...
             nil
+          end
+        end
+
+        # Move to the node leftmost of this location.
+        #
+        # @return [Rhubarb::AST::Zipper::Location]
+        def leftmost
+          maybe_left = self.left
+          if maybe_left
+            maybe_left.leftmost
+          else
+            self
           end
         end
 
@@ -221,6 +245,118 @@ module Rhubarb
             up
           end
         end
+
+        # Return an array of all child locations of this location.
+        #
+        # @return [Array<Rhubarb::AST::Zipper:::Location>]
+        def child_locations
+          if self.branch?
+            if self.children.any?
+              child_location = self.down
+              child_location
+                .right_locations
+                .tap { |locations| locations.unshift(child_location) }
+            else
+              []
+            end
+          else
+            fail ZipperError, "`child_locations' may only be called on a branch location (when the value of `node' is an AST::Node)"
+          end
+        end
+
+        # Return an array of sibling locations to the right of this
+        # location.
+        #
+        # @return [Array<Rhubarb::AST::Zipper:::Location>]
+        def right_locations
+          right_location = self.right
+
+          if self.right
+            right_location
+              .right_locations
+              .tap { |locations| locations.unshift(right_location)}
+          else
+            []
+          end
+        end
+
+        # Return an array of sibling locations to the left of this
+        # location.
+        #
+        # @return [Array<Rhubarb::AST::Zipper:::Location>]
+        def left_locations
+          maybe_left = self.left
+
+          if maybe_left
+            maybe_left
+              .left_locations
+              .tap { |locations| locations.push(maybe_left) }
+          else
+            []
+          end
+        end
+
+        # Applies `block` to each node of the tree in pre-order
+        # fashion returning.
+        #
+        # @yieldparam [AST::Node, Object]
+        # @return [Rhubarb::AST::Zipper::Location] the root location
+        #   after applying the prewalk function to each node.
+        def prewalk(&block)
+          new_location =
+            if self.branch?
+              sub_location = self.edit do |node|
+                yield node
+              end
+
+              if sub_location.branch?
+                sub_location
+                  .down
+                  .prewalk(&block)
+              else
+                sub_location
+              end
+            else
+              sub_location = self.edit do |node|
+                yield node
+              end
+            end
+
+          maybe_right = new_location.right
+
+          if maybe_right
+            maybe_right.prewalk(&block)
+          else
+            if new_location.root?
+              new_location
+            else
+              new_location.up
+            end
+          end
+        end
+
+        def postwalk(&block)
+          if self.branch?
+            self.down.postwalk(&block)
+
+            yield self
+
+            maybe_right = self.right
+
+            if maybe_right
+              maybe_right.postwalk(&block)
+            end
+          else
+            yield self
+
+            maybe_right = self.right
+
+            if maybe_right
+              maybe_right.postwalk(&block)
+            end
+          end
+        end
+
       end # Location
     end # Zipper
   end # AST

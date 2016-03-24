@@ -46,6 +46,7 @@ GEM
       equalizer (~> 0.0.9)
       parser (~> 2.3.0)
       procto (~> 0.0.2)
+    yajl-ruby (1.2.1)
     yard (0.8.7.6)
 
 PLATFORMS
@@ -56,4 +57,5 @@ DEPENDENCIES
   pry
   rspec
   unparser
+  yajl-ruby
   yard
