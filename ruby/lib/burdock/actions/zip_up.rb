@@ -22,8 +22,27 @@ module Burdock
 
         location = Burdock::AST::Zipper.location_at_point(root_location, point)
 
-        parent_node = location.up.node
+        parent_location =
+          if location.root?
+            location
+          else
+            location = location.up
 
+            loop do
+              case true
+              when location.root?
+                break
+              when location.node.type == :begin
+                location = location.up
+              else
+                break
+              end
+            end
+
+            location
+          end
+
+        parent_node = parent_location.node
         expression = parent_node.location.expression
         start_line = expression.first_line
         start_point = expression.begin_pos
