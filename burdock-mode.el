@@ -6,10 +6,18 @@
   (make-sparse-keymap)
   "TODO")
 
+
 (define-minor-mode burdock-mode
   "TODO"
   :lighter " Burdock"
   :keymap burdock-mode-map)
+
+
+(defcustom burdock-ruby-source-directory
+  "/Users/noprompt/git/noprompt/rhubarb-mode/ruby/"
+  "The Burdock Ruby source directory."
+  :type '(file :must-match t)
+  :group 'burdock-mode)
 
 
 ;; ---------------------------------------------------------------------
@@ -103,15 +111,22 @@ variable data."
   (lambda (process response-string)
     (funcall 'burdock-receive-response process response-string)))
 
-(defvar burdock-ruby-source-directory
-  "/Users/noprompt/git/noprompt/rhubarb-mode/ruby/")
+(defun burdock-setup ()
+  (let* ((default-directory burdock-ruby-source-directory)
+	 (bundler-buffer (get-buffer-create "*bundler*"))
+	 (exit-code (shell-command "bundle install --path=vendor"
+				   bundler-buffer
+				   bundler-buffer)))
+    (kill-buffer bundler-buffer)))
 
 (defun burdock-initialize-process ()
   (when (or (not burdock-process)
 	    (not (process-live-p burdock-process)))
     (let* ((process-connection-type nil) ;; Use a pipe.
 	   (process (let ((default-directory burdock-ruby-source-directory))
-		      (start-process "*burdock*" nil "bin/burdoc"))))
+		      (message "%s" default-directory)
+		      (start-process "*burdock*" nil
+				     "bundle" "exec" "ruby" "bin/burdock"))))
       (set-process-filter process burdock-process-filter)
       (setq burdock-process process))))
 
@@ -156,8 +171,8 @@ value compatible for Emacs."
 	 (burdock-point (burdock-emacs-point-to-burdock-point (point)))
 	 (line-number (line-number-at-pos))
 	 (column-number (current-column)))
-    `((column . ,column)
-      (line-number . ,line)
+    `((column . ,column-number)
+      (line-number . ,line-number)
       (point . ,burdock-point)
       (source . ,source))))
 
@@ -185,36 +200,36 @@ value compatible for Emacs."
 
 (defun burdock-zip-left ()
   (interactive)
-  (let* ((request (burdock-request "rhubarb/zip-left")))
+  (let* ((request (burdock-request "burdock/zip-left")))
     (burdock-send-request burdock-process request 'burdock-goto-start-point)))
 
 (defun burdock-zip-right ()
   (interactive)
-  (let* ((request (burdock-request "rhubarb/zip-right")))
+  (let* ((request (burdock-request "burdock/zip-right")))
     (burdock-send-request burdock-process request 'burdock-goto-start-point)))
 
 (defun burdock-zip-up ()
   (interactive)
-  (let* ((request (burdock-request "rhubarb/zip-up")))
+  (let* ((request (burdock-request "burdock/zip-up")))
     (burdock-send-request burdock-process request 'burdock-goto-start-point)))
 
 (defun burdock-zip-down ()
   (interactive)
-  (let* ((request (burdock-request "rhubarb/zip-down")))
+  (let* ((request (burdock-request "burdock/zip-down")))
     (burdock-send-request burdock-process request 'burdock-goto-start-point)))
 
 (defun burdock-evaluate-scope-at-point ()
   (interactive)
-  (let* ((request (burdock-request "rhubarb/scope-at-line")))
+  (let* ((request (burdock-request "burdock/scope-at-line")))
     (burdock-send-request burdock-process request 'burdock-evaluate-source)))
 
 (defun burdock-evaluate-expression-at-point ()
   (interactive)
-  (let* ((request (burdock-request "rhubarb/expression-at-point")))
+  (let* ((request (burdock-request "burdock/expression-at-point")))
     (burdock-send-request burdock-process request 'burdock-evaluate-source)))
 
 (defun burdock-structured-wrap (left-delimiter right-delimiter &optional post-hook)
-  (lexical-let ((request (burdock-request "rhubarb/expression-at-point"))
+  (lexical-let ((request (burdock-request "burdock/expression-at-point"))
 		(left-delimiter left-delimiter)
 		(right-delimiter right-delimiter)
 		(post-hook post-hook))
@@ -280,18 +295,21 @@ value compatible for Emacs."
 
 (provide 'burdock-mode)
 
-(when nil
- (defun ~/define-evil-keys-for-burdock-mode ()
-   (interactive)
-   (define-key evil-normal-state-local-map ",e" 'burdock-evaluate-scope-at-point)
-   (define-key evil-normal-state-local-map "W(" 'burdock-structured-wrap-round)
-   (define-key evil-normal-state-local-map "W[" 'burdock-structured-wrap-square)
-   (define-key evil-normal-state-local-map "W{" 'burdock-structured-wrap-curly)
-   (define-key evil-normal-state-local-map "W\"" 'burdock-structured-wrap-double-quote)
-   (define-key evil-normal-state-local-map "W'" 'burdock-structured-wrap-single-quote)
-   (define-key evil-normal-state-local-map "Wl" 'burdock-structured-wrap-lambda)
-   (define-key evil-normal-state-local-map "WL" 'burdock-structured-wrap-lambda-call)
-   (define-key evil-normal-state-local-map [down] 'burdock-zip-down)
-   (define-key evil-normal-state-local-map [up] 'burdock-zip-up)
-   (define-key evil-normal-state-local-map [left] 'burdock-zip-left)
-   (define-key evil-normal-state-local-map [right] 'burdock-zip-right)))
+(defun ~/define-evil-keys-for-burdock-mode ()
+  (interactive)
+  (define-key evil-normal-state-local-map ",e" 'burdock-evaluate-scope-at-point)
+  (define-key evil-normal-state-local-map "W(" 'burdock-structured-wrap-round)
+  (define-key evil-normal-state-local-map "W[" 'burdock-structured-wrap-square)
+  (define-key evil-normal-state-local-map "W{" 'burdock-structured-wrap-curly)
+  (define-key evil-normal-state-local-map "W\"" 'burdock-structured-wrap-double-quote)
+  (define-key evil-normal-state-local-map "W'" 'burdock-structured-wrap-single-quote)
+  (define-key evil-normal-state-local-map "Wl" 'burdock-structured-wrap-lambda)
+  (define-key evil-normal-state-local-map "WL" 'burdock-structured-wrap-lambda-call)
+  (define-key evil-normal-state-local-map [down] 'burdock-zip-down)
+  (define-key evil-normal-state-local-map [up] 'burdock-zip-up)
+  (define-key evil-normal-state-local-map [left] 'burdock-zip-left)
+  (define-key evil-normal-state-local-map [right] 'burdock-zip-right))
+
+(add-hook 'ruby-mode-hook 'burdock-mode)
+(add-hook 'burdock-mode-hook '~/define-evil-keys-for-burdock-mode)
+(add-hook 'burdock-mode-hook 'burdock-start)
