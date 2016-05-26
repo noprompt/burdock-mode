@@ -1,5 +1,5 @@
 require_relative "scope_at_line/processor"
-require_relative "../ast"
+require "burdock/ast"
 
 module Burdock
   module Actions
@@ -70,3 +70,5 @@ module Burdock
     end # ScopeAtLine
   end # Actions
 end # Burdock
+
+Burdock::Actions::Registry.put("burdock/scope-at-line", Burdock::Actions::ScopeAtLine)

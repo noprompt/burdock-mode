@@ -1,3 +1,4 @@
+require "burdock/actions/registry"
 require "burdock/ast"
 require "burdock/actions/expression_at_point/processor"
 require "burdock/unparser"
@@ -62,3 +63,5 @@ module Burdock
     end # ExpressionAtPoint
   end # Actions
 end # Burdock
+
+Burdock::Actions::Registry.put("burdock/expression-at-point", Burdock::Actions::ExpressionAtPoint)

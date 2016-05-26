@@ -1,3 +1,4 @@
+require "burdock/actions/registry"
 require "burdock/ast"
 require "burdock/ast/zipper" 
 require "burdock/refinements/object"
@@ -59,3 +60,5 @@ module Burdock
     end # LeftSibling
   end # Actions
 end # Burdock
+
+Burdock::Actions::Registry.put("burdock/zip-left", Burdock::Actions::LeftSibling)

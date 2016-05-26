@@ -1,3 +1,5 @@
+require "burdock/actions/registry"
+
 module Burdock
   module Actions
     class Echo
@@ -8,3 +10,5 @@ module Burdock
     end # Echo
   end # Actions
 end # Burdock
+
+Burdock::Actions::Registry.put("burdock/echo", Burdock::Actions::Echo)
