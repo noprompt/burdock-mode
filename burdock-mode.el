@@ -14,7 +14,7 @@
 
 
 (defcustom burdock-ruby-source-directory
-  "/Users/noprompt/git/noprompt/rhubarb-mode/ruby/"
+  nil
   "The Burdock Ruby source directory."
   :type '(file :must-match t)
   :group 'burdock-mode)
@@ -56,9 +56,6 @@ exists."
 ;; ---------------------------------------------------------------------
 ;; burdock-client
 
-(defvar burdock-callback-table
-  (make-hash-table :test 'equal))
-
 ;; SEE: http://nullprogram.com/blog/2010/05/11/
 (defun burdock-uuid-create ()
   "Return a newly generated UUID. This uses a simple hashing of
@@ -81,7 +78,15 @@ variable data."
             (substring s 16 20)
             (substring s 20 32))))
 
+(defvar burdock-callback-table
+  (make-hash-table :test 'equal)
+  "Hash table mapping request ids to callbacks.")
+
 (defun burdock-send-request (burdock-process request-data &optional callback)
+  "Encodes the contents of `request-data' as JSON and sends it to
+`burdock-process'. If the optional `callback' is provided it will be
+stored in `burdock-callback-table' and called when response
+corresponding to this request is received."
   (let* ((id (burdock-uuid-create))
 	 (request-data-with-id (cons `(id . ,id) request-data)))
     (puthash id (or callback 'identity) burdock-callback-table)
@@ -89,6 +94,11 @@ variable data."
     (process-send-string burdock-process "\n")))
 
 (defun burdock-receive-response (burdock-process response-string)
+  "Default function used by `burdoc-process-filter' responsible for
+decoding `response-string' from JSON and calling a corresponding
+callback, if any, with the decoded JSON data.
+
+JSON is decoded as an alist with `json-read-from-string'."
   (let* ((response-data (json-read-from-string response-string))
 	 (id (cdr (assoc 'id response-data)))
 	 (callback (gethash id burdock-callback-table 'identity)))
@@ -96,9 +106,16 @@ variable data."
     (remhash id burdock-callback-table)))
 
 (defun burdock-error-response-p (response-data)
+  "Returns t if `response-data' contains an entry for the key 'error."
   (assoc 'error response-data))
 
+(defun burdock-success-response-p (response-data)
+  "Returns t if `response-data' contains an entry for the key 'error."
+  (not (burdock-error-response-p response-data)))
+
 (defun burdock-get-parameter (key response-data)
+  "Retrieve the value of `key' from the value of the key 'params in
+`response-data'."
   (cdr (assoc key (cdr (assoc 'params response-data)))))
 
 ;; ---------------------------------------------------------------------
@@ -124,25 +141,24 @@ variable data."
 	    (not (process-live-p burdock-process)))
     (let* ((process-connection-type nil) ;; Use a pipe.
 	   (process (let ((default-directory burdock-ruby-source-directory))
-		      (start-process "*burdock*" nil
-				     "bundle" "exec" "bin/burdock"))))
+		      (start-process "*burdock*" nil "bundle" "exec" "bin/burdock"))))
       (set-process-filter process burdock-process-filter)
       (setq burdock-process process))))
 
 (defun burdock-start ()
-  "Starts the `burdock-process'."
+  "Starts `burdock-process'."
   (interactive)
   (burdock-initialize-process))
 
 (defun burdock-stop ()
-  "Stops the `burdock-process' if it is live."
+  "Stops `burdock-process' if it is live."
   (interactive)
   (when (process-live-p burdock-process)
     (kill-process burdock-process)
     (setq-local burdock-process nil)))
 
 (defun burdock-restart ()
-  "Restarts the `burdock-process'."
+  "Restarts `burdock-process'."
   (interactive)
   (burdock-stop)
   (burdock-start))
@@ -166,6 +182,8 @@ value compatible for Emacs."
   (+ burdock-point 1))
 
 (defun burdock-base-parameters ()
+  "Parameters essential in virtually every request. Includes the
+current buffer content, point, line number, and column number."
   (let* ((source (buffer-substring-no-properties (point-min) (point-max)))
 	 (burdock-point (burdock-emacs-point-to-burdock-point (point)))
 	 (line-number (line-number-at-pos))
@@ -176,58 +194,128 @@ value compatible for Emacs."
       (source . ,source))))
 
 (defun burdock-request (method &optional parameters)
+  "Constructs a burdock request object (an alist) but does not send
+it. `method' should either a string or symbol. `parameters' should be
+alist."
   (let ((params (append parameters (burdock-base-parameters))))
     `((method . ,method)
-      (params . ,(burdock-base-parameters)))))
+      (params . ,params))))
 
 (defun burdock-goto-start-point (response-data)
-  (if (burdock-error-response-p response-data)
-      nil
-    (let* ((response-params (cdr (assoc 'params response-data)))
-	   (start-point (cdr (assoc 'start_point response-params))))
-      (if start-point
-	  (let ((start-point (burdock-emacs-point-from-burdock-point start-point)))
-	    (goto-char start-point))
-	nil))))
+  "Helper function used to go to the value of a starting point as
+provided by `response-data'."
+  (when (burdock-success-response-p response-data)
+    (let ((start-point (burdock-get-parameter 'start_point response-data)))
+      (when start-point
+	(let ((start-point (burdock-emacs-point-from-burdock-point start-point)))
+	  (goto-char start-point))))))
 
 (defun burdock-evaluate-source (response-data)
-  (if (burdock-error-response-p response-data)
-      nil
-    (let* ((response-params (cdr (assoc 'params response-data)))
-	   (source (cdr (assoc 'source response-params))))
-      (burdock-repl-send-lines (split-string source "\n")))))
+  "Helper function which sends source code provided by `response-data' to the
+current Ruby process."
+  (when (burdock-success-response-p response-data)
+    (let ((source (burdock-get-parameter 'source response-data)))
+      (when source
+	(burdock-repl-send-lines (split-string source "\n"))))))
 
 (defun burdock-zip-left ()
+  "Move to the sibling to the left of the node at the current position
+in a structural fashion."
   (interactive)
   (let* ((request (burdock-request "burdock/zip-left")))
     (burdock-send-request burdock-process request 'burdock-goto-start-point)))
 
 (defun burdock-zip-right ()
+  "Move to the sibling to the right of the node at the current position
+in a structural fashion."
   (interactive)
   (let* ((request (burdock-request "burdock/zip-right")))
     (burdock-send-request burdock-process request 'burdock-goto-start-point)))
 
 (defun burdock-zip-up ()
+  "Move to the parent the node at the current position in a structural
+fashion."
   (interactive)
   (let* ((request (burdock-request "burdock/zip-up")))
     (burdock-send-request burdock-process request 'burdock-goto-start-point)))
 
 (defun burdock-zip-down ()
+  "Move to the first child of the node at the current position in a
+structural fashion."
   (interactive)
   (let* ((request (burdock-request "burdock/zip-down")))
     (burdock-send-request burdock-process request 'burdock-goto-start-point)))
 
-(defun burdock-evaluate-scope-at-point ()
-  (interactive)
-  (let* ((request (burdock-request "burdock/scope-at-line")))
-    (burdock-send-request burdock-process request 'burdock-evaluate-source)))
-
 (defun burdock-evaluate-expression-at-point ()
+  "Evaluate the expression at the current position in a structural
+fashion. Equivalent to evaluating a single node in an AST. Note
+the extracted expression to be evaluated will be semantically
+equivalent but not syntactically equivalent."
   (interactive)
   (let* ((request (burdock-request "burdock/expression-at-point")))
     (burdock-send-request burdock-process request 'burdock-evaluate-source)))
 
+(defun burdock-evaluate-scope-at-point ()
+  "Evaluate the expression at the current position in a structural
+fashion with respect to Ruby scope in the current Ruby process. Note
+the extracted expression to be evaluated will be semantically
+equivalent but not syntactically equivalent.
+
+The following Ruby code and legend provide an overview of the
+extraction process by example.
+
+    class Foo
+      # (A)
+
+      attr_reader :bar # (B)
+      attr_reader :baz
+
+      def initialize(bar, baz)
+	@bar = bar # (C)
+	@baz = baz # (C)
+      end
+    end
+
+In position (A) the extraction includes the entirety of the class
+definition.
+
+    class Foo
+      attr_reader :bar
+      attr_reader :baz
+      def initialize(bar, baz)
+        @bar = bar
+	@baz = baz
+      end
+    end
+
+In position (B) with the cursor anywhere inside the att_reader
+expression will result in the following extraction.
+
+    class Foo
+      attr_reader :bar
+    end
+
+Notice the attr_reader for :baz was not extracted.
+
+In position (C) with the cursor anywhere inside the def expression
+will result in the following extraction.
+
+    class Foo
+      def initialize(bar, baz)
+        @bar = bar
+	@baz = baz
+      end
+    end
+"
+  (interactive)
+  (let* ((request (burdock-request "burdock/scope-at-line")))
+    (burdock-send-request burdock-process request 'burdock-evaluate-source)))
+
 (defun burdock-structured-wrap (left-delimiter right-delimiter &optional post-hook)
+  "Wrap the expression at the current position with `left-delimiter'
+and `right-delimiter' in a structured fashion. Calls the optional
+function `post-hook' with the start and end point of the full wrapped
+expression."
   (lexical-let ((request (burdock-request "burdock/expression-at-point"))
 		(left-delimiter left-delimiter)
 		(right-delimiter right-delimiter)
@@ -261,32 +349,46 @@ value compatible for Emacs."
 				  nil))))))) 
 
 (defun burdock-structured-wrap-round ()
+  "In a structured fashion, wrap the expression at the current
+position with round brackets."
   (interactive)
   (burdock-structured-wrap "(" ")"))
 
 (defun burdock-structured-wrap-square ()
+  "In a structured fashion, wrap the expression at the current
+position with square brackets."
   (interactive)
   (burdock-structured-wrap "[" "]"))
 
 (defun burdock-structured-wrap-curly ()
+  "In a structured fashion, wrap the expression at the current
+position with curly brackets."
   (interactive)
   (burdock-structured-wrap "{" "}"))
 
 (defun burdock-structured-wrap-double-quote ()
+  "In a structured fashion, wrap the expression at the current
+position with double quotes."
   (interactive)
   (burdock-structured-wrap "\"" "\""))
 
 (defun burdock-structured-wrap-single-quote ()
+  "In a structured fashion, wrap the expression at the current
+position with single quotes."
   (interactive)
   (burdock-structured-wrap "'" "'"))
 
 (defun burdock-structured-wrap-lambda ()
+  "In a structured fashion, wrap the expression at the current
+position with \"lambda do\" and \"end\" then reindent."
   (interactive)
   (burdock-structured-wrap "lambda do\n" "\nend"
 			   (lambda (start-point end-point)
 			     (indent-region start-point end-point))))
 
 (defun burdock-structured-wrap-lambda-call ()
+  "In a structured fashion, wrap the expression at the current
+position with \"lambda do\" and \"end.call\" then reindent."
   (interactive)
   (burdock-structured-wrap "lambda do\n" "\nend.call"
 			   (lambda (start-point end-point)
@@ -294,21 +396,23 @@ value compatible for Emacs."
 
 (provide 'burdock-mode)
 
-(defun ~/define-evil-keys-for-burdock-mode ()
-  (interactive)
-  (define-key evil-normal-state-local-map ",e" 'burdock-evaluate-scope-at-point)
-  (define-key evil-normal-state-local-map "W(" 'burdock-structured-wrap-round)
-  (define-key evil-normal-state-local-map "W[" 'burdock-structured-wrap-square)
-  (define-key evil-normal-state-local-map "W{" 'burdock-structured-wrap-curly)
-  (define-key evil-normal-state-local-map "W\"" 'burdock-structured-wrap-double-quote)
-  (define-key evil-normal-state-local-map "W'" 'burdock-structured-wrap-single-quote)
-  (define-key evil-normal-state-local-map "Wl" 'burdock-structured-wrap-lambda)
-  (define-key evil-normal-state-local-map "WL" 'burdock-structured-wrap-lambda-call)
-  (define-key evil-normal-state-local-map [down] 'burdock-zip-down)
-  (define-key evil-normal-state-local-map [up] 'burdock-zip-up)
-  (define-key evil-normal-state-local-map [left] 'burdock-zip-left)
-  (define-key evil-normal-state-local-map [right] 'burdock-zip-right))
+(when nil
+  (setq burdock-ruby-source-directory "/Users/noprompt/git/noprompt/rhubarb-mode/ruby/")
+  (defun ~/define-evil-keys-for-burdock-mode ()
+    (interactive)
+    (define-key evil-normal-state-local-map ",e" 'burdock-evaluate-scope-at-point)
+    (define-key evil-normal-state-local-map "W(" 'burdock-structured-wrap-round)
+    (define-key evil-normal-state-local-map "W[" 'burdock-structured-wrap-square)
+    (define-key evil-normal-state-local-map "W{" 'burdock-structured-wrap-curly)
+    (define-key evil-normal-state-local-map "W\"" 'burdock-structured-wrap-double-quote)
+    (define-key evil-normal-state-local-map "W'" 'burdock-structured-wrap-single-quote)
+    (define-key evil-normal-state-local-map "Wl" 'burdock-structured-wrap-lambda)
+    (define-key evil-normal-state-local-map "WL" 'burdock-structured-wrap-lambda-call)
+    (define-key evil-normal-state-local-map [down] 'burdock-zip-down)
+    (define-key evil-normal-state-local-map [up] 'burdock-zip-up)
+    (define-key evil-normal-state-local-map [left] 'burdock-zip-left)
+    (define-key evil-normal-state-local-map [right] 'burdock-zip-right))
 
-(add-hook 'ruby-mode-hook 'burdock-mode)
-(add-hook 'burdock-mode-hook '~/define-evil-keys-for-burdock-mode)
-(add-hook 'burdock-mode-hook 'burdock-start)
+  (add-hook 'ruby-mode-hook 'burdock-mode)
+  (add-hook 'burdock-mode-hook '~/define-evil-keys-for-burdock-mode)
+  (add-hook 'burdock-mode-hook 'burdock-start))
