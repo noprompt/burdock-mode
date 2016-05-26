@@ -1,15 +1,15 @@
-require "rhubarb/result"
+require "burdock/result"
 
-RSpec.describe Rhubarb::Result do
+RSpec.describe Burdock::Result do
 
   describe ".try" do
 
-    let (:failure) { Rhubarb::Result.try { fail } }
+    let (:failure) { Burdock::Result.try { fail } }
 
     context "when a StandardError is thrown in the block" do
 
-      it "returns an instance of Rhubarb::Result::Failure" do
-        expect(failure).to be_a(Rhubarb::Result::Failure)
+      it "returns an instance of Burdock::Result::Failure" do
+        expect(failure).to be_a(Burdock::Result::Failure)
       end
       
       it "#value returns the error" do

@@ -1,11 +1,11 @@
-require "rhubarb/actions/echo"
+require "burdock/actions/echo"
 
-RSpec.describe Rhubarb::Actions::Echo do
+RSpec.describe Burdock::Actions::Echo do
 
   describe ".call" do
     it "returns it's argument" do
       message = {}
-      response = Rhubarb::Actions::Echo.call(message)
+      response = Burdock::Actions::Echo.call(message)
       expect(response).to be(message)
     end
   end

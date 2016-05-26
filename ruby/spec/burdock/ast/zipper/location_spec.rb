@@ -1,16 +1,16 @@
-require "rhubarb/ast"
-require "rhubarb/ast/zipper"
-require "rhubarb/ast/zipper/location"
+require "burdock/ast"
+require "burdock/ast/zipper"
+require "burdock/ast/zipper/location"
 
-RSpec.describe Rhubarb::AST::Zipper::Location do
+RSpec.describe Burdock::AST::Zipper::Location do
 
   context "when the current location is the root" do
     let(:node) do
-      Rhubarb::AST.from_string("1 + 2")
+      Burdock::AST.from_string("1 + 2")
     end
 
     let(:location) do
-      Rhubarb::AST::Zipper.from_node(node)
+      Burdock::AST::Zipper.from_node(node)
     end
 
     describe "#root?" do
@@ -41,14 +41,14 @@ RSpec.describe Rhubarb::AST::Zipper::Location do
       it "fails" do
         expect do
           location.up
-        end.to raise_error(Rhubarb::AST::Zipper::ZipperError)
+        end.to raise_error(Burdock::AST::Zipper::ZipperError)
       end
     end
 
     describe "#down" do
       it "succeeds" do
         new_location = location.down
-        expected_node = Rhubarb::AST.from_string("1")
+        expected_node = Burdock::AST.from_string("1")
 
         expect(new_location.node).to eq(expected_node)
       end
@@ -70,7 +70,7 @@ RSpec.describe Rhubarb::AST::Zipper::Location do
       it "fails" do
         expect do
           location.delete
-        end.to raise_error(Rhubarb::AST::Zipper::ZipperError)
+        end.to raise_error(Burdock::AST::Zipper::ZipperError)
       end
     end
 
@@ -78,7 +78,7 @@ RSpec.describe Rhubarb::AST::Zipper::Location do
       it "fails" do
         expect do
           location.insert_left("foo")
-        end.to raise_error(Rhubarb::AST::Zipper::ZipperError)
+        end.to raise_error(Burdock::AST::Zipper::ZipperError)
       end
     end
 
@@ -86,18 +86,18 @@ RSpec.describe Rhubarb::AST::Zipper::Location do
       it "fails" do
         expect do
           location.insert_right("foo")
-        end.to raise_error(Rhubarb::AST::Zipper::ZipperError)
+        end.to raise_error(Burdock::AST::Zipper::ZipperError)
       end
     end
   end
 
   context "when the current location is a leaf" do
     let(:node) do
-      Rhubarb::AST.from_string("1 + 2")
+      Burdock::AST.from_string("1 + 2")
     end
 
     let(:location) do
-      Rhubarb::AST::Zipper.from_node(node).down.down
+      Burdock::AST::Zipper.from_node(node).down.down
     end
 
     describe "#root?" do
@@ -116,7 +116,7 @@ RSpec.describe Rhubarb::AST::Zipper::Location do
       it "fails" do
         expect do
           location.children
-        end.to raise_error(Rhubarb::AST::Zipper::ZipperError)
+        end.to raise_error(Burdock::AST::Zipper::ZipperError)
       end
     end
 
@@ -124,18 +124,18 @@ RSpec.describe Rhubarb::AST::Zipper::Location do
       it "fails" do
         expect do
           location.down
-        end.to raise_error(Rhubarb::AST::Zipper::ZipperError)
+        end.to raise_error(Burdock::AST::Zipper::ZipperError)
       end
     end
   end
 
   context "moving down then up" do
     let(:node) do
-      Rhubarb::AST.from_string("1 + 2")
+      Burdock::AST.from_string("1 + 2")
     end
 
     let(:initial_location) do
-      Rhubarb::AST::Zipper.from_node(node)
+      Burdock::AST::Zipper.from_node(node)
     end
 
     let(:final_location) do
@@ -155,11 +155,11 @@ RSpec.describe Rhubarb::AST::Zipper::Location do
 
   context "moving down then up" do
     let(:node) do
-      Rhubarb::AST.from_string("1 + 2")
+      Burdock::AST.from_string("1 + 2")
     end
 
     let(:initial_location) do
-      Rhubarb::AST::Zipper.from_node(node).down
+      Burdock::AST::Zipper.from_node(node).down
     end
 
     let(:final_location) do
@@ -179,11 +179,11 @@ RSpec.describe Rhubarb::AST::Zipper::Location do
 
   context "moving right then left" do
     let(:node) do
-      Rhubarb::AST.from_string("1 + 2")
+      Burdock::AST.from_string("1 + 2")
     end
 
     let(:initial_location) do
-      Rhubarb::AST::Zipper.from_node(node).down
+      Burdock::AST::Zipper.from_node(node).down
     end
 
     let(:final_location) do
@@ -203,11 +203,11 @@ RSpec.describe Rhubarb::AST::Zipper::Location do
 
   context "moving left then right" do
     let(:node) do
-      Rhubarb::AST.from_string("1 + 2")
+      Burdock::AST.from_string("1 + 2")
     end
 
     let(:initial_location) do
-      Rhubarb::AST::Zipper.from_node(node).down.right
+      Burdock::AST::Zipper.from_node(node).down.right
     end
 
     let(:final_location) do
@@ -227,18 +227,18 @@ RSpec.describe Rhubarb::AST::Zipper::Location do
 
   describe "#child_locations" do
     let(:node) do
-      Rhubarb::AST.from_string("1 + 2")
+      Burdock::AST.from_string("1 + 2")
     end
 
   end
 
   describe "#left_locations" do
     let(:node) do
-      Rhubarb::AST.from_string("[1, 2, 3, 4]")
+      Burdock::AST.from_string("[1, 2, 3, 4]")
     end
 
     let(:location) do
-      Rhubarb::AST::Zipper.from_node(node).down.rightmost
+      Burdock::AST::Zipper.from_node(node).down.rightmost
     end
 
     it "produces nodes in the same order as #lefts" do
@@ -250,11 +250,11 @@ RSpec.describe Rhubarb::AST::Zipper::Location do
 
   describe "#right_locations" do
     let(:node) do
-      Rhubarb::AST.from_string("[1, 2, 3, 4]")
+      Burdock::AST.from_string("[1, 2, 3, 4]")
     end
 
     let(:location) do
-      Rhubarb::AST::Zipper.from_node(node).down
+      Burdock::AST::Zipper.from_node(node).down
     end
 
     it "produces nodes in the same order as #rights" do

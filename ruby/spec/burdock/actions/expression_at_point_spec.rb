@@ -1,6 +1,6 @@
-require "rhubarb/actions/expression_at_point"
+require "burdock/actions/expression_at_point"
 
-RSpec.describe Rhubarb::Actions::ExpressionAtPoint do
+RSpec.describe Burdock::Actions::ExpressionAtPoint do
 
   describe ".call" do
 
@@ -30,16 +30,14 @@ RSpec.describe Rhubarb::Actions::ExpressionAtPoint do
         }
       }
 
-      response_1 = Rhubarb::Actions::ExpressionAtPoint.call(message_1)
+      response_1 = Burdock::Actions::ExpressionAtPoint.call(message_1)
 
-      expected_response_pattern_1 = {
-        :method => an_instance_of(String),
-        :params => {
-          :end_point => an_instance_of(Fixnum),
-          :source => left_operand,
-          :start_point => an_instance_of(Fixnum),
+      expected_response_pattern_1 = a_hash_including(
+        {
+          :method => "burdock/source",
         }
-      }
+      )
+      
 
       expect(response_1).to match(expected_response_pattern_1)
 
@@ -52,16 +50,13 @@ RSpec.describe Rhubarb::Actions::ExpressionAtPoint do
         }
       }
 
-      response_2 = Rhubarb::Actions::ExpressionAtPoint.call(message_2)
+      response_2 = Burdock::Actions::ExpressionAtPoint.call(message_2)
 
-      expected_response_pattern_2 = {
-        :method => an_instance_of(String),
-        :params => {
-          :end_point => an_instance_of(Fixnum),
-          :source => right_operand,
-          :start_point => an_instance_of(Fixnum),
+      expected_response_pattern_2 = a_hash_including(
+        {
+          :method => "burdock/source",
         }
-      }
+      )
 
       expect(response_2).to match(expected_response_pattern_2)
 
@@ -74,16 +69,13 @@ RSpec.describe Rhubarb::Actions::ExpressionAtPoint do
         }
       }
 
-      response_3 = Rhubarb::Actions::ExpressionAtPoint.call(message_3)
+      response_3 = Burdock::Actions::ExpressionAtPoint.call(message_3)
 
-      expected_response_pattern_3 = {
-        :method => an_instance_of(String),
-        :params => {
-          :end_point => an_instance_of(Fixnum),
-          :source => arithmetic_expression,
-          :start_point => an_instance_of(Fixnum),
+      expected_response_pattern_3 = a_hash_including(
+        {
+          :method => "burdock/source",
         }
-      }
+      )
 
       expect(response_3).to match(expected_response_pattern_3)
     end
