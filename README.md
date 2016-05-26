@@ -26,7 +26,7 @@ Emacs.
 (add-to-list 'load-path BURDOCK_DIRECTORY)
 (require 'burdock-mode)
 
-;; Tells burdoct where the backend Ruby code lives. This can also be
+;; Tells burdock where the backend Ruby code lives. This can also be
 ;; configured with `M-x customize-group`.
 (setq burdock-ruby-source-directory (concat BURDOCK_DIRECTORY "ruby/"))
 
