@@ -395,24 +395,3 @@ position with \"lambda do\" and \"end.call\" then reindent."
 			     (indent-region start-point end-point))))
 
 (provide 'burdock-mode)
-
-(when nil
-  (setq burdock-ruby-source-directory "/Users/noprompt/git/noprompt/rhubarb-mode/ruby/")
-  (defun ~/define-evil-keys-for-burdock-mode ()
-    (interactive)
-    (define-key evil-normal-state-local-map ",e" 'burdock-evaluate-scope-at-point)
-    (define-key evil-normal-state-local-map "W(" 'burdock-structured-wrap-round)
-    (define-key evil-normal-state-local-map "W[" 'burdock-structured-wrap-square)
-    (define-key evil-normal-state-local-map "W{" 'burdock-structured-wrap-curly)
-    (define-key evil-normal-state-local-map "W\"" 'burdock-structured-wrap-double-quote)
-    (define-key evil-normal-state-local-map "W'" 'burdock-structured-wrap-single-quote)
-    (define-key evil-normal-state-local-map "Wl" 'burdock-structured-wrap-lambda)
-    (define-key evil-normal-state-local-map "WL" 'burdock-structured-wrap-lambda-call)
-    (define-key evil-normal-state-local-map [down] 'burdock-zip-down)
-    (define-key evil-normal-state-local-map [up] 'burdock-zip-up)
-    (define-key evil-normal-state-local-map [left] 'burdock-zip-left)
-    (define-key evil-normal-state-local-map [right] 'burdock-zip-right))
-
-  (add-hook 'ruby-mode-hook 'burdock-mode)
-  (add-hook 'burdock-mode-hook '~/define-evil-keys-for-burdock-mode)
-  (add-hook 'burdock-mode-hook 'burdock-start))
