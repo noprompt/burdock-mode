@@ -1,4 +1,4 @@
-module Rhubarb
+module Burdock
   module Refinements
     module Object
       refine ::Object do
@@ -26,7 +26,12 @@ module Rhubarb
         def symbol?
           ::Symbol === self
         end
+
+        # @return [Boolean]
+        def node?
+          ::AST::Node === self
+        end
       end
     end # Object
   end # Refinements
-end # Rhubarb
+end # Burdock

@@ -1,6 +1,6 @@
-require "parser"
+require "burdock/parser"
 
-module Rhubarb
+module Burdock
   class Response
     
     # @param [Hash] exception
@@ -45,4 +45,4 @@ module Rhubarb
     end
 
   end # Response
-end # Rhubarb
+end # Burdock

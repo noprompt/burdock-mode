@@ -1,3 +1,8 @@
+PATH
+  remote: .
+  specs:
+    rhubarb (1.0.0)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -23,6 +28,10 @@ GEM
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
       slop (~> 3.4)
+    pry-doc (0.8.0)
+      pry (~> 0.9)
+      yard (~> 0.8)
+    rake (10.5.0)
     rspec (3.4.0)
       rspec-core (~> 3.4.0)
       rspec-expectations (~> 3.4.0)
@@ -53,9 +62,16 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  bundler (~> 1.11)
   parser
   pry
-  rspec
+  pry-doc
+  rake (~> 10.0)
+  rhubarb!
+  rspec (~> 3.0)
   unparser
   yajl-ruby
   yard
+
+BUNDLED WITH
+   1.12.3

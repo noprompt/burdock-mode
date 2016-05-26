@@ -1,9 +1,9 @@
-require "parser"
-require "unparser"
+require "burdock/ast/zipper"
+require "burdock/parser"
+require "burdock/unparser"
 
-module Rhubarb
+module Burdock
   module AST
-    require_relative "ast/zipper"
 
     # @param [Array] array
     # @return [Parser::AST::Node]
@@ -35,4 +35,4 @@ module Rhubarb
     end
 
   end # AST
-end # Rhubarb
+end # Burdock

@@ -1,12 +1,12 @@
 require "ast"
-require_relative "../../refinements/ast"
+require "burdock/refinements/ast"
 
-module Rhubarb
+module Burdock
   module Actions
     module ExpressionAtPoint
       class Processor < ::AST::Processor
 
-        using Rhubarb::Refinements::AST
+        using Burdock::Refinements::AST
 
         attr_reader :point
 
@@ -38,4 +38,4 @@ module Rhubarb
       end # Processor
     end # ExpressionAtPoint
   end # Actions
-end # Rhubarb
+end # Burdock

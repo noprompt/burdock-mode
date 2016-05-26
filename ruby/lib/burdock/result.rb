@@ -1,4 +1,4 @@
-module Rhubarb
+module Burdock
   class Result
     attr_reader :value
 
@@ -57,4 +57,4 @@ module Rhubarb
     end
 
   end # Result
-end # Rhubarb
+end # Burdock

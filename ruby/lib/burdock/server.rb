@@ -10,14 +10,14 @@ require_relative "response"
 require_relative "result"
   
 
-module Rhubarb
+module Burdock
   HandlerMissingError = Class.new(StandardError)
 
   class Server
 
     attr_reader :handlers
 
-    def initialize(handlers = Rhubarb::Defaults.handlers)
+    def initialize(handlers = Burdock::Defaults.handlers)
       @handlers = handlers
     end
 
@@ -37,7 +37,7 @@ module Rhubarb
           message = parse_message(request)
           handle_message(message)
         rescue => error
-          Rhubarb::Response.from_exception(error)
+          Burdock::Response.from_exception(error)
         end
       response.merge({ id: message["id"] }).to_json
     end
@@ -55,11 +55,11 @@ module Rhubarb
         maybe_handler.call(message)
       else
         error_message = "No handler for method type `%s'" % [method]
-        error = Rhubarb::HandlerMissingError.new(error_message)
-        Rhubarb::Response.from_exception(error)
+        error = Burdock::HandlerMissingError.new(error_message)
+        Burdock::Response.from_exception(error)
       end
     rescue => error
-      Rhubarb::Response.from_exception(error)
+      Burdock::Response.from_exception(error)
     end
 
     # @param [String] request
@@ -71,4 +71,4 @@ module Rhubarb
     end
 
   end # Server
-end # Rhubarb
+end # Burdock

@@ -1,4 +1,4 @@
-module Rhubarb
+module Burdock
   module Actions
     class Echo
       # @param [Hash] message
@@ -7,4 +7,4 @@ module Rhubarb
       end
     end # Echo
   end # Actions
-end # Rhubarb
+end # Burdock

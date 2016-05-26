@@ -1,11 +1,20 @@
 source "https://rubygems.org"
 
-gem "parser"
-gem "pry"
-gem "unparser"
-gem "yard"
+# parser emits warnings upon load which is not appropriate for this
+# project. unparser, which depends on parser, thusly causes the same
+# problem. $stderr needs to be temporarily suppressed while loading
+# either of these gems which requires custom handling. Therefore we
+# cannot rely on Bundler to require these gems for us.
+#
+# See lib/burdock/parser.rb and lib/burdock/unparser.rb
+gem "parser", require: false
+gem "unparser", require: false
 gem "yajl-ruby"
+gem "yard"
 
 group :development do
-  gem "rspec"
+  gem "pry"
+  gem "pry-doc"
 end
+
+gemspec

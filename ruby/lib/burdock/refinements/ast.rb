@@ -1,6 +1,6 @@
 require "ast"
 
-module Rhubarb
+module Burdock
   module Refinements
     module AST
       refine ::AST::Node do
@@ -50,4 +50,4 @@ module Rhubarb
       end
     end # AST
   end # Refinements
-end # Rhubarb
+end # Burdock

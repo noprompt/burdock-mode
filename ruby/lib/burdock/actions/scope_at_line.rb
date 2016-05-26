@@ -1,7 +1,7 @@
 require_relative "scope_at_line/processor"
 require_relative "../ast"
 
-module Rhubarb
+module Burdock
   module Actions
     module ScopeAtLine
       # @param [Hash] message
@@ -11,22 +11,22 @@ module Rhubarb
         line_number = params.fetch("line-number")
         source = params.fetch("source")
 
-        processor = Rhubarb::Actions::ScopeAtLine::Processor.new(line_number)
-        node = Rhubarb::AST.from_string(source)
+        processor = Burdock::Actions::ScopeAtLine::Processor.new(line_number)
+        node = Burdock::AST.from_string(source)
         maybe_node = processor.process(node)
 
         if maybe_node
           ruby_source = Unparser.unparse(maybe_node)
 
           {
-            method: "rhubarb/source",
+            method: "burdock/source",
             params: {
               source: ruby_source
             }
           }
         else
           {
-            method: "rhubarb/source",
+            method: "burdock/source",
             params: {
               source: nil
             }
@@ -46,7 +46,7 @@ module Rhubarb
         # @return [Hash]
         def self.call(_message)
           {
-            method: "rhubarb/documentation",
+            method: "burdock/documentation",
             params: {
               fields: [
                 {
@@ -69,4 +69,4 @@ module Rhubarb
 
     end # ScopeAtLine
   end # Actions
-end # Rhubarb
+end # Burdock

@@ -1,12 +1,12 @@
 require "ast"
-require_relative "../../refinements/ast"
+require "burdock/refinements/ast"
 
-module Rhubarb
+module Burdock
   module Actions
     module ScopeAtLine
       class Processor < ::AST::Processor
 
-        using Rhubarb::Refinements::AST
+        using Burdock::Refinements::AST
 
         attr_reader :line_number
 
@@ -78,4 +78,4 @@ module Rhubarb
       end # Processor
     end # ScopeAtLine
   end # Actions
-end # Rhubarb
+end # Burdock

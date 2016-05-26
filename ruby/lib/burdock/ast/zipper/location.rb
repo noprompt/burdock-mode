@@ -1,11 +1,11 @@
-module Rhubarb
+module Burdock
   module AST
     module Zipper
       ZipperError = Class.new(StandardError)
 
       class Location
         # @!attribute [r] path
-        #   @return [Rhubarb::AST::Zipper::Location] the path (from
+        #   @return [Burdock::AST::Zipper::Location] the path (from
         #     the root) to this location.
         #   @return [nil] if this location is at the root.
         attr_reader :path
@@ -26,7 +26,7 @@ module Rhubarb
         attr_reader :rights
 
         # @param [AST::Node] node
-        # @param [Rhubarb::AST::Zipper::Location, nil] path
+        # @param [Burdock::AST::Zipper::Location, nil] path
         # @param [Array] lefts
         # @param [Array] rigths
         def initialize(node, path, lefts = [], rights = [])
@@ -71,7 +71,7 @@ module Rhubarb
         # node at this location. This method is a noop if this
         # location is the root location.
         #
-        # @return [Rhubarb::AST::Zipper::Location]
+        # @return [Burdock::AST::Zipper::Location]
         def up
           if root?
             fail ZipperError, "`up' may not be called on the root location"
@@ -87,7 +87,7 @@ module Rhubarb
         # Move down from the parent location. This method is a noop
         # if this location is not a branch node (e.g. an `AST::Node`).
         #
-        # @return [Rhubarb::AST::Zipper::Location]
+        # @return [Burdock::AST::Zipper::Location]
         def down
           if branch?
             head, *rights = children
@@ -100,7 +100,7 @@ module Rhubarb
 
         # Move to the node right of this location.
         #
-        # @return [Rhubarb::AST::Zipper::Location]
+        # @return [Burdock::AST::Zipper::Location]
         def right
           if self.rights.any?
             node, *new_rights = self.rights
@@ -115,7 +115,7 @@ module Rhubarb
 
         # Move to the node rightmost of this location.
         #
-        # @return [Rhubarb::AST::Zipper::Location]
+        # @return [Burdock::AST::Zipper::Location]
         def rightmost
           maybe_right = self.right
           if maybe_right
@@ -127,7 +127,7 @@ module Rhubarb
 
         # Move to the node left of this location.
         #
-        # @return [Rhubarb::AST::Zipper::Location]
+        # @return [Burdock::AST::Zipper::Location]
         def left
           if self.lefts.any?
             *new_lefts, node = self.lefts 
@@ -142,7 +142,7 @@ module Rhubarb
 
         # Move to the node leftmost of this location.
         #
-        # @return [Rhubarb::AST::Zipper::Location]
+        # @return [Burdock::AST::Zipper::Location]
         def leftmost
           maybe_left = self.left
           if maybe_left
@@ -154,7 +154,7 @@ module Rhubarb
 
         # @yieldparam [Object] node the node at this location.
         # @yieldreturn [Object] the new node at this locaiton.
-        # @return [Rhubarb::AST::Zipper::Location]
+        # @return [Burdock::AST::Zipper::Location]
         def edit
           new_node = yield self.node
 
@@ -163,7 +163,7 @@ module Rhubarb
 
         # Replace the node at this location.
         #
-        # @return [Rhubarb::AST::Zipper::Location]
+        # @return [Burdock::AST::Zipper::Location]
         def replace(x)
           edit { x }
         end
@@ -181,7 +181,7 @@ module Rhubarb
         # If there are no nodes to the left or right of this location
         # then delete the current node and move up to the parent.
         #
-        # @return [Rhubarb::AST::Zipper::Location]
+        # @return [Burdock::AST::Zipper::Location]
         def delete
           if root?
             fail ZipperError, "the root not may not be deleted"
@@ -215,7 +215,7 @@ module Rhubarb
 
         # Insert a node to the "left" of this location.
         #
-        # @return [Rhubarb::AST::Zipper::Location]
+        # @return [Burdock::AST::Zipper::Location]
         def insert_left(x)
           if root?
             fail ZipperError, "insertion is not permitted at the root"
@@ -228,7 +228,7 @@ module Rhubarb
 
         # Insert a node to the "right" of this location.
         #
-        # @return [Rhubarb::AST::Zipper::Location]
+        # @return [Burdock::AST::Zipper::Location]
         def insert_right(x)
           if root?
             fail ZipperError, "insertion is not permitted at the root"
@@ -239,7 +239,7 @@ module Rhubarb
           end
         end
 
-        # @return [Rhubarb::AST::Zipper::Location]
+        # @return [Burdock::AST::Zipper::Location]
         def root
           if root?
             self
@@ -250,7 +250,7 @@ module Rhubarb
 
         # Return an array of all child locations of this location.
         #
-        # @return [Array<Rhubarb::AST::Zipper:::Location>]
+        # @return [Array<Burdock::AST::Zipper:::Location>]
         def child_locations
           if self.branch?
             if self.children.any?
@@ -269,7 +269,7 @@ module Rhubarb
         # Return an array of sibling locations to the right of this
         # location.
         #
-        # @return [Array<Rhubarb::AST::Zipper:::Location>]
+        # @return [Array<Burdock::AST::Zipper:::Location>]
         def right_locations
           right_location = self.right
 
@@ -285,7 +285,7 @@ module Rhubarb
         # Return an array of sibling locations to the left of this
         # location.
         #
-        # @return [Array<Rhubarb::AST::Zipper:::Location>]
+        # @return [Array<Burdock::AST::Zipper:::Location>]
         def left_locations
           maybe_left = self.left
 
@@ -302,7 +302,7 @@ module Rhubarb
         # fashion returning.
         #
         # @yieldparam [AST::Node, Object]
-        # @return [Rhubarb::AST::Zipper::Location] the root location
+        # @return [Burdock::AST::Zipper::Location] the root location
         #   after applying the prewalk function to each node.
         def prewalk(&block)
           new_location =
@@ -337,7 +337,7 @@ module Rhubarb
         # fashion returning.
         #
         # @yieldparam [AST::Node, Object]
-        # @return [Rhubarb::AST::Zipper::Location] the root location
+        # @return [Burdock::AST::Zipper::Location] the root location
         #   after applying the prewalk function to each node.
         def postwalk(&block)
           new_location =
@@ -363,9 +363,18 @@ module Rhubarb
           end
         end
 
-        # At return an instance of Enumerator which produces a stream
-        # of nodes reachable from this location in level-order
-        # fashion.
+        def each
+          if block_given?
+            to_enum.each do |node|
+              yield node
+            end
+          else
+            to_enum
+          end
+        end
+
+        # Return an instance of Enumerator which produces a stream of
+        # nodes reachable from this location in level-order fashion.
         #
         # @return [Enumerator]
         def to_enum

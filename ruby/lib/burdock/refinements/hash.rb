@@ -1,4 +1,4 @@
-module Rhubarb
+module Burdock
   module Refinements
     module Hash
 
@@ -14,4 +14,4 @@ module Rhubarb
 
     end # Hash
   end # Refinements
-end # Rhubarb
+end # Burdock

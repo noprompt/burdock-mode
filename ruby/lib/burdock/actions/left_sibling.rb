@@ -1,23 +1,29 @@
-require "unparser"
+require "burdock/ast"
+require "burdock/ast/zipper" 
+require "burdock/refinements/object"
 
 
-require_relative "../ast"
-require_relative "expression_at_point/processor"
-
-module Rhubarb
+module Burdock
   module Actions
-    module ExpressionAtPoint
+    module LeftSibling
+      using Burdock::Refinements::AST
+      using Burdock::Refinements::Object
+
       # @param [Hash] message
-      # @return [Hash] message
+      # @return [Hash]
       def self.call(message)
         params = message.fetch("params")
         point = params.fetch("point")
         source = params.fetch("source")
 
-        processor = Rhubarb::Actions::ExpressionAtPoint::Processor.new(point)
-        node = Rhubarb::AST.from_string(source)
+        node = Burdock::AST.from_string(source)
+        root_location = Burdock::AST::Zipper.from_node(node)
 
-        maybe_node = processor.process(node)
+        location = Burdock::AST::Zipper.location_at_point(root_location, point)
+
+        maybe_node = location.lefts.reverse.find do |x|
+          x.node?
+        end
 
         if maybe_node
           expression = maybe_node.location.expression
@@ -25,22 +31,21 @@ module Rhubarb
           start_point = expression.begin_pos
           end_point = expression.end_pos
           end_line = expression.last_line
-
-          source = Unparser.unparse(maybe_node)
+          ruby_source = source[start_point...end_point]
 
           {
-            method: "rhubarb/source",
+            method: "burdock/source",
             params: {
               end_line: end_line,
               end_point: end_point,
-              source: source,
+              source: ruby_source,
               start_line: start_line,
               start_point: start_point
             }
           }
         else
           {
-            method: "rhubarb/source",
+            method: "burdock/source",
             params: {
               end_line: nil,
               end_point: nil,
@@ -50,17 +55,7 @@ module Rhubarb
             }
           }
         end
-
       end
-
-      # @return [Array]
-      def self.required_parameters
-        [
-          "point",
-          "source",
-        ]
-      end
-
-    end # ExpressionAtPoint
+    end # LeftSibling
   end # Actions
-end # Rhubarb
+end # Burdock

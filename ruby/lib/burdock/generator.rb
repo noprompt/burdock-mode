@@ -1,4 +1,4 @@
-module Rhubarb
+module Burdock
 
   # @see http://rubinius.com/doc/en/virtual-machine/instructions/
   class Generator
