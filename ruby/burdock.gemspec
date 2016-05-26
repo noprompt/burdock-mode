@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require "burdock/version"
 
 Gem::Specification.new do |spec|
-  spec.name          = "rhubarb"
+  spec.name          = "burdock"
   spec.version       = Burdock::VERSION
   spec.authors       = ["Joel Holdbrooks"]
   spec.email         = ["cjholdbrooks@gmail.com"]
