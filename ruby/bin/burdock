@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+require "bundler"
+
+Bundler.require
+require "burdock"
+
+Burdock::REPL.run!
