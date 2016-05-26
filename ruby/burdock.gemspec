@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.name          = "rhubarb"
   spec.version       = Burdock::VERSION
   spec.authors       = ["Joel Holdbrooks"]
-  spec.email         = ["cjholdbrooks@gmail.com.com"]
+  spec.email         = ["cjholdbrooks@gmail.com"]
   spec.summary       = ""
   spec.description   = ""
   spec.homepage      = "https://github.com/noprompt/burdock-mode"
