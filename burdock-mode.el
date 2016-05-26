@@ -124,9 +124,8 @@ variable data."
 	    (not (process-live-p burdock-process)))
     (let* ((process-connection-type nil) ;; Use a pipe.
 	   (process (let ((default-directory burdock-ruby-source-directory))
-		      (message "%s" default-directory)
 		      (start-process "*burdock*" nil
-				     "bundle" "exec" "ruby" "bin/burdock"))))
+				     "bundle" "exec" "bin/burdock"))))
       (set-process-filter process burdock-process-filter)
       (setq burdock-process process))))
 
