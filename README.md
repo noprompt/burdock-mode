@@ -73,7 +73,7 @@ end.call
 ```
 
 Now, position your cursor _anywhere_ between the `do` and `end`
-delimiters and execute <kbd>M-x</kdb>
+delimiters and execute <kbd>M-x</kbd>
 `burdock-evaluate-scope-at-point`. With any luck you should see
 something similar to the following result in your Ruby REPL.
 
