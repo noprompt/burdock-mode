@@ -6,7 +6,7 @@ require "burdock/refinements/object"
 
 module Burdock
   module Actions
-    module RightSibling
+    module ZipLeft
       using Burdock::Refinements::AST
       using Burdock::Refinements::Object
 
@@ -22,7 +22,9 @@ module Burdock
 
         location = Burdock::AST::Zipper.location_at_point(root_location, point)
 
-        maybe_node = location.rights.first
+        maybe_node = location.lefts.reverse.find do |x|
+          x.node?
+        end
 
         if maybe_node
           expression = maybe_node.location.expression
@@ -55,8 +57,8 @@ module Burdock
           }
         end
       end
-    end # RightSibling
+    end # LeftSibling
   end # Actions
 end # Burdock
 
-Burdock::Actions::Registry.put("burdock/zip-right", Burdock::Actions::RightSibling)
+Burdock::Actions::Registry.put("burdock/zip-left", Burdock::Actions::ZipLeft)
