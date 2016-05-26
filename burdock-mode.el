@@ -111,7 +111,7 @@ variable data."
 	    (not (process-live-p burdock-process)))
     (let* ((process-connection-type nil) ;; Use a pipe.
 	   (process (let ((default-directory burdock-ruby-source-directory))
-		      (start-process "*rhubarb-v1.0.0*" nil "rbenv" "exec" "bundle" "exec" "bin/rhubarb"))))
+		      (start-process "*burdock*" nil "bin/burdoc"))))
       (set-process-filter process burdock-process-filter)
       (setq burdock-process process))))
 
