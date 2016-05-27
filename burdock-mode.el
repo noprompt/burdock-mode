@@ -19,6 +19,12 @@
   :type '(file :must-match t)
   :group 'burdock-mode)
 
+;; ---------------------------------------------------------------------
+;; burdock-error
+
+(defun burdock-error-buffer ()
+  "Buffer where Burdock errors will be displayed."
+  (get-buffer-create "*burdock-error*"))
 
 ;; ---------------------------------------------------------------------
 ;; burdock-repl
@@ -93,17 +99,47 @@ corresponding to this request is received."
     (process-send-string burdock-process (json-encode request-data-with-id))
     (process-send-string burdock-process "\n")))
 
+(defconst burdock-response-sentinel
+  "\n\n")
+
+(defconst burdock-response-buffer
+  (get-buffer-create "*burdock-response-buffer*"))
+
+(defun burdock-write-response-chunk-to-buffer (response-string)
+  (with-current-buffer burdock-response-buffer
+    (buffer-end 0)
+    (insert response-string)))
+
+(defun burdock-read-response-from-buffer ()
+  (with-current-buffer burdock-response-buffer
+    (goto-char (point-min))
+    (let ((maybe-point (search-forward burdock-response-sentinel nil t)))
+      (when maybe-point
+	(let ((response (buffer-substring-no-properties (point-min) maybe-point)))
+	  (delete-region (point-min) maybe-point)
+	  (string-trim-right response))))))
+
 (defun burdock-receive-response (burdock-process response-string)
   "Default function used by `burdoc-process-filter' responsible for
 decoding `response-string' from JSON and calling a corresponding
 callback, if any, with the decoded JSON data.
 
 JSON is decoded as an alist with `json-read-from-string'."
-  (let* ((response-data (json-read-from-string response-string))
-	 (id (cdr (assoc 'id response-data)))
-	 (callback (gethash id burdock-callback-table 'identity)))
-    (funcall callback response-data)
-    (remhash id burdock-callback-table)))
+  (burdock-write-response-chunk-to-buffer response-string)
+  (let ((maybe-response (burdock-read-response-from-buffer)))
+    (condition-case nil
+	(let* ((response-data (json-read-from-string maybe-response))
+	       (id (cdr (assoc 'id response-data)))
+	       (callback (gethash id burdock-callback-table 'identity)))
+	  (funcall callback response-data)
+	  (remhash id burdock-callback-table))
+      (json-error
+       (display-buffer (burdock-error-buffer))
+       (with-current-buffer (burdock-error-buffer)
+	 (erase-buffer)
+	 (insert
+	  "There was a problem parsing the following message.\n"
+	  maybe-response))))))
 
 (defun burdock-error-response-p (response-data)
   "Returns t if `response-data' contains an entry for the key 'error."
