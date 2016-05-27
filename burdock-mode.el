@@ -430,4 +430,55 @@ position with \"lambda do\" and \"end.call\" then reindent."
 			   (lambda (start-point end-point)
 			     (indent-region start-point end-point))))
 
+(defun budock-s-expression-at-point ()
+  (interactive)
+  (let ((request (burdock-request "burdock/s-expression-at-point")))
+    (burdock-send-request burdock-process request
+			  (lambda (response-data)
+			    (let ((s-expression (burdock-get-parameter 's_expression response-data)))
+			      (message "%s" s-expression))))))
+
+;; ---------------------------------------------------------------------
+;; burdock-s-expression
+
+(defvar burdock-s-expression-timer
+  nil
+  "TODO")
+
+(defun burdock-s-expression-buffer ()
+  (get-buffer-create "*burdock-s-expression*"))
+
+(defun burdock-show-s-expression-at-point-in-buffer ()
+  (interactive)
+  (let ((request (burdock-request "burdock/s-expression-at-point")))
+    (burdock-send-request burdock-process request
+			  (lambda (response-data)
+			    (if (burdock-success-response-p response-data)
+				(let ((s-expression (burdock-get-parameter 's_expression response-data)))
+				  (display-buffer (burdock-s-expression-buffer))
+				  (with-current-buffer (burdock-s-expression-buffer)
+				    (erase-buffer)
+				    (insert s-expression)))
+			      nil)))))
+
+(defun burdock-run-s-expression-timer-function ()
+  (setq burdock-s-expression-timer
+	(run-with-idle-timer
+	 0.5
+	 t
+	 (lambda ()
+	   (when (bound-and-true-p burdock-mode)
+	     (burdock-show-s-expression-at-point-in-buffer))))))
+
+(defun burdock-disable-s-expression-buffer ()
+  (interactive)
+  (when burdock-s-expression-timer
+    (cancel-timer burdock-s-expression-timer)
+    (setq burdock-s-expression-timer nil)))
+
+(defun burdock-enable-s-expression-buffer ()
+  (interactive)
+  (when (not burdock-s-expression-timer)
+    (burdock-run-s-expression-timer-function)))
+
 (provide 'burdock-mode)
