@@ -106,9 +106,8 @@ corresponding to this request is received."
   (get-buffer-create "*burdock-response-buffer*"))
 
 (defun burdock-write-response-chunk-to-buffer (response-string)
-  (message "Writing chunk: %s" response-string)
   (with-current-buffer burdock-response-buffer
-    (buffer-end 0)
+    (buffer-end -1)
     (insert response-string)))
 
 (defun burdock-read-response-from-buffer ()
@@ -117,7 +116,6 @@ corresponding to this request is received."
     (let ((maybe-point (search-forward burdock-response-sentinel nil t)))
       (when maybe-point
 	(let ((response (buffer-substring-no-properties (point-min) maybe-point)))
-	  (message "Extracting response: %s" response)
 	  (delete-region (point-min) maybe-point)
 	  (string-trim-right response))))))
 
