@@ -96,10 +96,10 @@ module Burdock
         case client
         when "emacs"
           $stderr.write(response)
-          $stderr.write("\n\n")
+          $stderr.write("\0\0")
         else
           $stdout.puts(response)
-          $stderr.write("\n\n")
+          $stderr.write("\0\0")
         end
       end
     end

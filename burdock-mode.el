@@ -100,12 +100,13 @@ corresponding to this request is received."
     (process-send-string burdock-process "\n")))
 
 (defconst burdock-response-sentinel
-  "\n\n")
+  "\0\0")
 
 (defconst burdock-response-buffer
   (get-buffer-create "*burdock-response-buffer*"))
 
 (defun burdock-write-response-chunk-to-buffer (response-string)
+  (message "Writing chunk: %s" response-string)
   (with-current-buffer burdock-response-buffer
     (buffer-end 0)
     (insert response-string)))
@@ -116,6 +117,7 @@ corresponding to this request is received."
     (let ((maybe-point (search-forward burdock-response-sentinel nil t)))
       (when maybe-point
 	(let ((response (buffer-substring-no-properties (point-min) maybe-point)))
+	  (message "Extracting response: %s" response)
 	  (delete-region (point-min) maybe-point)
 	  (string-trim-right response))))))
 
@@ -127,19 +129,22 @@ callback, if any, with the decoded JSON data.
 JSON is decoded as an alist with `json-read-from-string'."
   (burdock-write-response-chunk-to-buffer response-string)
   (let ((maybe-response (burdock-read-response-from-buffer)))
-    (condition-case nil
-	(let* ((response-data (json-read-from-string maybe-response))
-	       (id (cdr (assoc 'id response-data)))
-	       (callback (gethash id burdock-callback-table 'identity)))
-	  (funcall callback response-data)
-	  (remhash id burdock-callback-table))
-      (json-error
-       (display-buffer (burdock-error-buffer))
-       (with-current-buffer (burdock-error-buffer)
-	 (erase-buffer)
-	 (insert
-	  "There was a problem parsing the following message.\n"
-	  maybe-response))))))
+    (when maybe-response
+      (condition-case nil
+	  (let* ((response-data (json-read-from-string maybe-response))
+		 (id (cdr (assoc 'id response-data)))
+		 (callback (gethash id burdock-callback-table 'identity)))
+	    (funcall callback response-data)
+	    (remhash id burdock-callback-table))
+	(json-error
+	 (with-current-buffer burdock-response-buffer
+	   (erase-buffer))
+	 (display-buffer (burdock-error-buffer))
+	 (with-current-buffer (burdock-error-buffer)
+	   (erase-buffer)
+	   (insert
+	    "There was a problem parsing the following message.\n"
+	    maybe-response)))))))
 
 (defun burdock-error-response-p (response-data)
   "Returns t if `response-data' contains an entry for the key 'error."
