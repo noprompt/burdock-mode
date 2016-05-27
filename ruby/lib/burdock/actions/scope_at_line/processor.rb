@@ -57,7 +57,7 @@ module Burdock
 
           if maybe_node
             new_children = [constant, maybe_node]
-            node.updated(nil, children)
+            node.updated(nil, new_children)
           else
             node
           end
