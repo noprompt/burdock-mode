@@ -107,7 +107,7 @@ corresponding to this request is received."
 
 (defun burdock-write-response-chunk-to-buffer (response-string)
   (with-current-buffer burdock-response-buffer
-    (buffer-end -1)
+    (goto-char (point-max))
     (insert response-string)))
 
 (defun burdock-read-response-from-buffer ()
@@ -115,8 +115,8 @@ corresponding to this request is received."
     (goto-char (point-min))
     (let ((maybe-point (search-forward burdock-response-sentinel nil t)))
       (when maybe-point
-	(let ((response (buffer-substring-no-properties (point-min) maybe-point)))
-	  (delete-region (point-min) maybe-point)
+	(let ((response (buffer-substring-no-properties (point-min) (point))))
+	  (delete-region (point-min) (point))
 	  (string-trim-right response))))))
 
 (defun burdock-receive-response (burdock-process response-string)
@@ -137,12 +137,12 @@ JSON is decoded as an alist with `json-read-from-string'."
 	(json-error
 	 (with-current-buffer burdock-response-buffer
 	   (erase-buffer))
-	 (display-buffer (burdock-error-buffer))
 	 (with-current-buffer (burdock-error-buffer)
 	   (erase-buffer)
 	   (insert
 	    "There was a problem parsing the following message.\n"
-	    maybe-response)))))))
+	    maybe-response))
+	 (display-buffer (burdock-error-buffer)))))))
 
 (defun burdock-error-response-p (response-data)
   "Returns t if `response-data' contains an entry for the key 'error."
