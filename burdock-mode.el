@@ -26,6 +26,15 @@
   "Buffer where Burdock errors will be displayed."
   (get-buffer-create "*burdock-error*"))
 
+(defun burdock-display-error-in-buffer (error-content)
+  "Display the value of `error-content' in `burdock-error-buffer'."
+  (with-current-buffer (burdock-error-buffer)
+    (erase-buffer)
+    (insert error-content))
+  ;; TODO: Make displaying this buffer optional.
+  (display-buffer (burdock-error-buffer)))
+
+
 ;; ---------------------------------------------------------------------
 ;; burdock-repl
 
@@ -39,21 +48,40 @@
 
 (defun burdock-repl-send-lines (lines)
   "Insert each line in `lines' into the `inf-ruby-buffer' if it
-exists."
+exists.
+
+This function deliberately emulates a programmer entering input at the
+REPL line-by-line. Sending the source lines directly to the process
+with `comint-send-string', as with the `ruby-send-*' functions, often
+produces strange output in `inf-ruby-buffer' such as the following.
+
+    [22] pry(main)> SyntaxError: unexpected keyword_end, expecting end-of-input
+    [23] pry(main)> => 2
+    [24] pry(main)> [24] pry(main)* [24] pry(main)* => :initialize
+
+This output is unacceptable. By emulating line-by-line entry the REPL
+output is consistent with manual REPL behavior.
+
+    [51] pry(main)> class Foo
+    [51] pry(main)*   def initialize(foo)
+    [51] pry(main)*     @foo = foo
+    [51] pry(main)*   end
+    [51] pry(main)* end
+    => :initialize
+"
   (when (bufferp (get-buffer inf-ruby-buffer))
     (let ((buff (current-buffer)))
-      ;; HACK: I have no idea why this is necessary but without it the
-      ;; REPL breaks when the point in the `inf-ruby-buffer' is anywhere
-      ;; other than `point-max'.
-      (switch-to-buffer-other-frame inf-ruby-buffer)
-      (goto-char (point-max))
-      (switch-to-buffer-other-frame buff)
       (with-current-buffer inf-ruby-buffer
+	;; HACK: I have no idea why this is necessary but without it
+	;; the REPL breaks when the point in the `inf-ruby-buffer' is
+	;; anywhere other than `point-max'.
+	(goto-char (point-max))
 	(dolist (line lines)
 	  ;; HACK: This ensures that each line of input is preceded by the
 	  ;; prompt in IRB. For Pry `Pry.config.auto_indent = false' can
 	  ;; be specified in the ~/.pryrc to preven issues with the
-	  ;; prompt.
+	  ;; prompt. The 5 millisecond sleep seems produce the best
+	  ;; result.
 	  (insert line)
 	  (sleep-for 0 5)
 	  (call-interactively (key-binding (kbd "<RET>"))))))))
@@ -99,50 +127,25 @@ corresponding to this request is received."
     (process-send-string burdock-process (json-encode request-data-with-id))
     (process-send-string burdock-process "\n")))
 
-(defconst burdock-response-sentinel
-  "\0\0")
-
-(defconst burdock-response-buffer
-  (get-buffer-create "*burdock-response-buffer*"))
-
-(defun burdock-write-response-chunk-to-buffer (response-string)
-  (with-current-buffer burdock-response-buffer
-    (goto-char (point-max))
-    (insert response-string)))
-
-(defun burdock-read-response-from-buffer ()
-  (with-current-buffer burdock-response-buffer
-    (goto-char (point-min))
-    (let ((maybe-point (search-forward burdock-response-sentinel nil t)))
-      (when maybe-point
-	(let ((response (buffer-substring-no-properties (point-min) (point))))
-	  (delete-region (point-min) (point))
-	  (string-trim-right response))))))
-
 (defun burdock-receive-response (burdock-process response-string)
   "Default function used by `burdoc-process-filter' responsible for
 decoding `response-string' from JSON and calling a corresponding
 callback, if any, with the decoded JSON data.
 
 JSON is decoded as an alist with `json-read-from-string'."
-  (burdock-write-response-chunk-to-buffer response-string)
-  (let ((maybe-response (burdock-read-response-from-buffer)))
-    (when maybe-response
-      (condition-case nil
-	  (let* ((response-data (json-read-from-string maybe-response))
-		 (id (cdr (assoc 'id response-data)))
-		 (callback (gethash id burdock-callback-table 'identity)))
-	    (funcall callback response-data)
-	    (remhash id burdock-callback-table))
-	(json-error
-	 (with-current-buffer burdock-response-buffer
-	   (erase-buffer))
-	 (with-current-buffer (burdock-error-buffer)
-	   (erase-buffer)
-	   (insert
-	    "There was a problem parsing the following message.\n"
-	    maybe-response))
-	 (display-buffer (burdock-error-buffer)))))))
+  (condition-case nil
+      (let* ((response-data (json-read-from-string maybe-response))
+	     (id (cdr (assoc 'id response-data)))
+	     (callback (gethash id burdock-callback-table 'identity)))
+	(funcall callback response-data)
+	(remhash id burdock-callback-table))
+    (json-error
+     (with-current-buffer (burdock-response-buffer)
+       (erase-buffer))
+
+     (burdock-display-error-in-buffer
+      (concat "There was a problem parsing the following message.\n"
+	      maybe-response)))))
 
 (defun burdock-error-response-p (response-data)
   "Returns t if `response-data' contains an entry for the key 'error."
@@ -163,17 +166,40 @@ JSON is decoded as an alist with `json-read-from-string'."
 (defconst burdock-process nil
   "The Burdock ruby process.")
 
+(defconst burdock-response-sentinel
+  "\0\0"
+  "Character sequence used to signal the end of a reponse.")
+
+(defun burdock-response-buffer ()
+  "Buffer responsible for holding output temporarily from
+`burdock-process'."
+  (get-buffer-create "*burdock-response-buffer*"))
+
+(defun burdock-write-response-chunk-to-buffer (response-string)
+  "Writes `response-string' to the buffer given by
+`burdock-response-buffer.'"
+  (with-current-buffer (burdock-response-buffer)
+    (goto-char (point-max))
+    (insert response-string)))
+
+(defun burdock-read-response-from-buffer (callback)
+  "Attemps to read a complete response from `burdock-response-buffer'
+passing it to `callback' if successful."
+  (with-current-buffer (burdock-response-buffer)
+    (goto-char (point-min))
+    (let ((maybe-point (search-forward burdock-response-sentinel nil t)))
+      (when maybe-point
+	(let ((response (buffer-substring-no-properties (point-min) (point))))
+	  (delete-region (point-min) (point))
+	  (funcall callback (string-trim-right response)))))))
+
 (defvar burdock-process-filter
   (lambda (process response-string)
-    (funcall 'burdock-receive-response process response-string)))
-
-(defun burdock-setup ()
-  (let* ((default-directory burdock-ruby-source-directory)
-	 (bundler-buffer (get-buffer-create "*bundler*"))
-	 (exit-code (shell-command "bundle install --path=vendor"
-				   bundler-buffer
-				   bundler-buffer)))
-    (kill-buffer bundler-buffer)))
+    (burdock-write-response-chunk-to-buffer response-string)
+    (burdock-read-response-from-buffer
+     (lambda (response)
+       (burdock-receive-response process response))))
+  "Process filter for `burdock-process'.")
 
 (defun burdock-initialize-process ()
   (when (or (not burdock-process)
@@ -208,7 +234,7 @@ JSON is decoded as an alist with `json-read-from-string'."
 
 
 ;; ---------------------------------------------------------------------
-;; burdock-process-interaction
+;; burdock-core
 
 (defun burdock-emacs-point-to-burdock-point (emacs-point)
   "Given an Emacs point, return a point value compatible with the
@@ -474,12 +500,16 @@ position with \"lambda do\" and \"end.call\" then reindent."
 	     (burdock-show-s-expression-at-point-in-buffer))))))
 
 (defun burdock-disable-s-expression-buffer ()
+  "Disable the display of the underlying s-expression with respect to
+`point' whenever idle."
   (interactive)
   (when burdock-s-expression-timer
     (cancel-timer burdock-s-expression-timer)
     (setq burdock-s-expression-timer nil)))
 
 (defun burdock-enable-s-expression-buffer ()
+  "Enable the display of the underlying s-expression with respect to
+`point' whenever idle."
   (interactive)
   (when (not burdock-s-expression-timer)
     (burdock-run-s-expression-timer-function)))
