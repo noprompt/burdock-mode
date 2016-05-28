@@ -124,7 +124,6 @@ corresponding to this request is received."
   (let* ((id (burdock-uuid-create))
 	 (request-data-with-id (cons `(id . ,id) request-data))
 	 (request-string (json-encode request-data-with-id)))
-    (message "===>\n%s" request-string)
     (puthash id (or callback 'identity) burdock-callback-table)
     (process-send-string burdock-process request-string)
     (process-send-string burdock-process "\n")))
@@ -136,8 +135,7 @@ callback, if any, with the decoded JSON data.
 
 JSON is decoded as an alist with `json-read-from-string'."
   (condition-case nil
-      (let* ((_ (message "<===\n%s" response-string))
-	     (response-data (json-read-from-string response-string))
+      (let* ((response-data (json-read-from-string response-string))
 	     (id (cdr (assoc 'id response-data)))
 	     (callback (gethash id burdock-callback-table 'identity)))
 	(funcall callback response-data)

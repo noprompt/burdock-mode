@@ -22,7 +22,9 @@ module Burdock
 
         location = Burdock::AST::Zipper.location_at_point(root_location, point)
 
-        maybe_node = location.rights.first
+        maybe_node = location.rights.find do |node|
+          node.node? && node.loc.expression
+        end
 
         if maybe_node
           expression = maybe_node.location.expression
