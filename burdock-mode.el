@@ -473,12 +473,88 @@ position with \"lambda do\" and \"end.call\" then reindent."
 ;; ---------------------------------------------------------------------
 ;; burdock-s-expression
 
+(defvar burdock-s-expression-mode-keywords
+  '("alias"
+    "and"
+    "array"
+    "arg"
+    "args"
+    "begin"
+    "block"
+    "blockarg"
+    "case"
+    "casgn"
+    "cbase"
+    "class"
+    "const"
+    "cvar"
+    "def"
+    "defs"
+    "defined?"
+    "dstr"
+    "ensure"
+    "erange"
+    "false"
+    "for"
+    "gvar"
+    "gvasgn"
+    "hash"
+    "if"
+    "int"
+    "irange"
+    "ivar"
+    "ivasgn"
+    "kwbegin"
+    "kwoptarg"
+    "lvar"
+    "lvasgn"
+    "masgn"
+    "mlhs"
+    "module"
+    "op-asgn"
+    "or"
+    "pair"
+    "redo"
+    "regexp"
+    "regopt"
+    "resbody"
+    "rescue"
+    "restarg"
+    "retry"
+    "return"
+    "self"
+    "send"
+    "splat"
+    "splat"
+    "str"
+    "sym"
+    "true"
+    "undef"
+    "until"
+    "when"
+    "while"
+    "yield"
+    "zsuper"))
+
+(define-derived-mode burdock-s-expression-mode fundamental-mode
+  "Rhubarb Sexp" 
+  (setq font-lock-defaults
+	`(((,(concat "\\_<" (regexp-opt burdock-s-expression-mode-keywords) "\\_>")
+	    . font-lock-keyword-face)
+	   (":[^\s()]+"
+	    . font-lock-constant-face)
+	   ("\\_<nil\\_>"
+	    . font-lock-variable-name-face)))))
+
 (defvar burdock-s-expression-timer
   nil
   "TODO")
 
 (defun burdock-s-expression-buffer ()
-  (get-buffer-create "*burdock-s-expression*"))
+  (if (not (buffer-live-p (get-buffer "*burdock-s-expression*")))
+      (with-current-buffer (get-buffer-create "*burdock-s-expression*")
+	(burdock-s-expression-mode))
+    (get-buffer-create "*burdock-s-expression*")))
 
 (defun burdock-show-s-expression-at-point-in-buffer ()
   (interactive)
