@@ -122,9 +122,11 @@ variable data."
 stored in `burdock-callback-table' and called when response
 corresponding to this request is received."
   (let* ((id (burdock-uuid-create))
-	 (request-data-with-id (cons `(id . ,id) request-data)))
+	 (request-data-with-id (cons `(id . ,id) request-data))
+	 (request-string (json-encode request-data-with-id)))
+    (message "===>\n%s" request-string)
     (puthash id (or callback 'identity) burdock-callback-table)
-    (process-send-string burdock-process (json-encode request-data-with-id))
+    (process-send-string burdock-process request-string)
     (process-send-string burdock-process "\n")))
 
 (defun burdock-receive-response (burdock-process response-string)
@@ -134,7 +136,8 @@ callback, if any, with the decoded JSON data.
 
 JSON is decoded as an alist with `json-read-from-string'."
   (condition-case nil
-      (let* ((response-data (json-read-from-string response-string))
+      (let* ((_ (message "<===\n%s" response-string))
+	     (response-data (json-read-from-string response-string))
 	     (id (cdr (assoc 'id response-data)))
 	     (callback (gethash id burdock-callback-table 'identity)))
 	(funcall callback response-data)
@@ -185,13 +188,15 @@ JSON is decoded as an alist with `json-read-from-string'."
 (defun burdock-read-response-from-buffer (callback)
   "Attemps to read a complete response from `burdock-response-buffer'
 passing it to `callback' if successful."
-  (with-current-buffer (burdock-response-buffer)
-    (goto-char (point-min))
-    (let ((maybe-point (search-forward burdock-response-sentinel nil t)))
-      (when maybe-point
-	(let ((response (buffer-substring-no-properties (point-min) (point))))
-	  (delete-region (point-min) (point))
-	  (funcall callback (string-trim-right response)))))))
+  (let ((maybe-response (with-current-buffer (burdock-response-buffer)
+			  (goto-char (point-min))
+			  (let ((maybe-point (search-forward burdock-response-sentinel nil t)))
+			    (when maybe-point
+			      (let ((response (buffer-substring-no-properties (point-min) (point))))
+				(delete-region (point-min) (point))
+				(string-trim-right response)))))))
+    (when maybe-response
+      (funcall callback maybe-response))))
 
 (defvar burdock-process-filter
   (lambda (process response-string)
