@@ -134,7 +134,7 @@ callback, if any, with the decoded JSON data.
 
 JSON is decoded as an alist with `json-read-from-string'."
   (condition-case nil
-      (let* ((response-data (json-read-from-string maybe-response))
+      (let* ((response-data (json-read-from-string response-string))
 	     (id (cdr (assoc 'id response-data)))
 	     (callback (gethash id burdock-callback-table 'identity)))
 	(funcall callback response-data)
@@ -145,7 +145,7 @@ JSON is decoded as an alist with `json-read-from-string'."
 
      (burdock-display-error-in-buffer
       (concat "There was a problem parsing the following message.\n"
-	      maybe-response)))))
+	      response-string)))))
 
 (defun burdock-error-response-p (response-data)
   "Returns t if `response-data' contains an entry for the key 'error."
