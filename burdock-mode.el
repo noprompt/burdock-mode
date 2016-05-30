@@ -593,4 +593,166 @@ position with \"lambda do\" and \"end.call\" then reindent."
   (when (not burdock-s-expression-timer)
     (burdock-run-s-expression-timer-function)))
 
+;; ---------------------------------------------------------------------
+;; burdock-instruction-sequence
+
+;; This list is likely incomplete.
+(defvar burdock-instruction-sequence-mode-keywords
+  '("UNIFIED_dup_setlocal"
+    "UNIFIED_getlocal_getlocal"
+    "UNIFIED_getlocal_putobject"
+    "UNIFIED_putobject_putobject"
+    "UNIFIED_putobject_putstring"
+    "UNIFIED_putobject_setdynamic"
+    "UNIFIED_putobject_setlocal"
+    "UNIFIED_putstring_putobject"
+    "UNIFIED_putstring_putstring"
+    "UNIFIED_putstring_setdynamic"
+    "UNIFIED_putstring_setlocal"
+    "alias"
+    "answer"
+    "bitblt"
+    "branchif"
+    "branchunless"
+    "checkincludearray"
+    "concatarray"
+    "concatstrings"
+    "defineclass"
+    "defined"
+    "definemethod"
+    "dup"
+    "duparray"
+    "dupn"
+    "emptstack"
+    "expandarray"
+    "finish"
+    "getclassvariable"
+    "getconstant"
+    "getdynamic"
+    "getdynamic_OP_1_0"
+    "getdynamic_OP_2_0"
+    "getdynamic_OP_3_0"
+    "getdynamic_OP_4_0"
+    "getdynamic_OP__WC__0"
+    "getglobal"
+    "getinlinecache"
+    "getinstancevariable"
+    "getlocal"
+    "getlocal_OP_2"
+    "getlocal_OP_3"
+    "getlocal_OP_4"
+    "getlocal_OP__WC__0"
+    "getspecial"
+    "invokeblock"
+    "invokesuper"
+    "jump"
+    "leave"
+    "newarray"
+    "newhash"
+    "newrange"
+    "nop"
+    "onceinlinecache"
+    "opt_aref"
+    "opt_aset"
+    "opt_call_native_compiled"
+    "opt_case_dispatch"
+    "opt_checkenv"
+    "opt_div"
+    "opt_eq"
+    "opt_le"
+    "opt_length"
+    "opt_lt"
+    "opt_ltlt"
+    "opt_minus"
+    "opt_mod"
+    "opt_mult"
+    "opt_plus"
+    "opt_send_without_block"
+    "opt_regexpmatch1"
+    "opt_regexpmatch2"
+    "opt_succ"
+    "pop"
+    "postexe"
+    "putiseq"
+    "putnil"
+    "putnot"
+    "putobject"
+    "putobject_OP_INT2FIX_O_0_C_"
+    "putobject_OP_INT2FIX_O_1_C_"
+    "putobject_OP_Qfalse"
+    "putobject_OP_Qtrue"
+    "putself"
+    "putspecialobject"
+    "putstring"
+    "putundef"
+    "reput"
+    "send"
+    "send_OP__WC__0_Qfalse_0__WC_"
+    "send_OP__WC__0_Qfalse_0x04__WC_"
+    "send_OP__WC__0_Qfalse_0x0c__WC_"
+    "send_OP__WC__1_Qfalse_0__WC_"
+    "send_OP__WC__1_Qfalse_0x04__WC_"
+    "send_OP__WC__2_Qfalse_0__WC_"
+    "send_OP__WC__2_Qfalse_0x04__WC_"
+    "send_OP__WC__3_Qfalse_0__WC_"
+    "send_OP__WC__3_Qfalse_0x04__WC_"
+    "send_OP__WC___WC__Qfalse_0__WC_"
+    "send_OP__WC___WC__Qfalse_0x04__WC_"
+    "setclassvariable"
+    "setconstant"
+    "setdynamic"
+    "setdynamic_OP_1_0"
+    "setdynamic_OP_2_0"
+    "setdynamic_OP_3_0"
+    "setdynamic_OP_4_0"
+    "setdynamic_OP__WC__0"
+    "setglobal"
+    "setinlinecache"
+    "setinstancevariable"
+    "setlocal"
+    "setlocal_OP_2"
+    "setlocal_OP_3"
+    "setlocal_OP_4"
+    "setspecial"
+    "splatarray"
+    "swap"
+    "throw"
+    "topn"
+    "toregexp"
+    "tostring"
+    "trace"
+    "undef"))
+
+(define-derived-mode burdock-instruction-sequence-mode fundamental-mode
+  "Burdock ISeq" 
+  (setq font-lock-defaults
+	`(((,(concat "\\_<" (regexp-opt burdock-instruction-sequence-mode-keywords) "\\_>")
+	    . font-lock-keyword-face)
+	   ("ARGS_SIMPLE"
+	    . font-lock-type-face)
+	   ("^[0-9]+"
+	    . font-lock-doc-face)
+	   ("^== disasm:\.+$"
+	    . font-lock-comment-face)
+	   ("[^\s()!]+:"
+	    . font-lock-constant-face)
+	   (":[^\s()]+"
+	    . font-lock-constant-face)
+	   ("\\_<nil\\_>"
+	    . font-lock-variable-name-face)))))
+
+(defun burdock-instruction-sequence-at-point ()
+  (interactive)
+  (burdock-send-request burdock-process
+			(burdock-request "burdock/instruction-sequence-at-scope")
+			(lambda (response-data)
+			  (if (burdock-error-response-p response-data)
+			      nil
+			    (let ((source (burdock-get-parameter 'source response-data))
+				  (buffer (get-buffer-create "*burdock-instruction-sequence*")))
+			      (display-buffer buffer)
+			      (with-current-buffer buffer
+				(erase-buffer)
+				(insert source)))))))
+
 (provide 'burdock-mode)

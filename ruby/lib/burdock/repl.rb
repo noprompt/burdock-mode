@@ -37,7 +37,7 @@ module Burdock
       Burdock::Actions::Registry.get(method) do |result|
         case result
         when StandardError
-          Burdock::Response.from_exception(error)
+          Burdock::Response.from_exception(result)
         else
           result.call(message)
         end

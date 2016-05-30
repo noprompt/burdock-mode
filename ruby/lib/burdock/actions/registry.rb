@@ -18,8 +18,9 @@ module Burdock
         if maybe_action
           yield maybe_action
         else
-          error_message = "No action registered for method type `%s'" % [method]
+          error_message = "No action registered for method type `%s'" % [method_name]
           error = ActionMissingError.new(error_message)
+          yield error
         end
       end
 
