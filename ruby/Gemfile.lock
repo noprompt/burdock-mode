@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rhubarb (1.0.0)
+    burdock (1.0.0)
 
 GEM
   remote: https://rubygems.org/
@@ -63,15 +63,15 @@ PLATFORMS
 
 DEPENDENCIES
   bundler (~> 1.11)
+  burdock!
   parser
   pry
   pry-doc
   rake (~> 10.0)
-  rhubarb!
   rspec (~> 3.0)
   unparser
   yajl-ruby
   yard
 
 BUNDLED WITH
-   1.12.3
+   1.12.5
