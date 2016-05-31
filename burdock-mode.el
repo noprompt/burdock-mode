@@ -269,6 +269,17 @@ alist."
     `((method . ,method)
       (params . ,params))))
 
+(defun burdock-kill-region (response-data)
+  "Helper function used to delete the region between the start and
+endpoint as provided by `response-data'."
+  (when (burdock-success-response-p response-data)
+    (let ((start-point (burdock-get-parameter 'start_point response-data))
+	  (end-point (burdock-get-parameter 'end_point response-data)))
+      (when (and start-point end-point)
+	(let ((start-point (burdock-emacs-point-from-burdock-point start-point))
+	      (end-point (burdock-emacs-point-from-burdock-point end-point)))
+	  (kill-region start-point end-point))))))
+
 (defun burdock-goto-start-point (response-data)
   "Helper function used to go to the value of a starting point as
 provided by `response-data'."
@@ -469,6 +480,21 @@ position with \"lambda do\" and \"end.call\" then reindent."
 			  (lambda (response-data)
 			    (let ((s-expression (burdock-get-parameter 's_expression response-data)))
 			      (message "%s" s-expression))))))
+
+(defun burdock-kill ()
+  (interactive)
+  (let ((request (burdock-request "burdock/s-expression-at-point")))
+    (burdock-send-request burdock-process request 'burdock-kill-region)))
+
+(defun burdock-backward-kill ()
+  (interactive)
+  (let ((request (burdock-request "burdock/zip-left")))
+    (burdock-send-request burdock-process request 'burdock-kill-region)))
+
+(defun burdock-forward-kill ()
+  (interactive)
+  (let ((request (burdock-request "burdock/zip-right")))
+    (burdock-send-request burdock-process request 'burdock-kill-region)))
 
 ;; ---------------------------------------------------------------------
 ;; burdock-s-expression
