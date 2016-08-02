@@ -8,6 +8,8 @@ module Burdock
 
         using Burdock::Refinements::AST
 
+        # @!attribute [r] line_number
+        #  @return [Integer]
         attr_reader :line_number
 
         # @param [Integer] line_number
@@ -17,14 +19,18 @@ module Burdock
 
         # @param [AST::Node] node
         # @return [AST::Node]
+        # @note This is not responsible for processing Ruby's
+        # `begin` construct.
         def on_begin(node)
           children = node.children
           maybe_node = find_node_on_line(children)
 
           if maybe_node
-            new_child = process(maybe_node)
-            new_children = [new_child]
-            node.updated(nil, new_children)
+            new_node = process(maybe_node)
+            # Since we're only interested in finding a single node we
+            # return just the processed node we've found instead of an
+            # updated node with one child.
+            new_node
           else
             node
           end
@@ -56,7 +62,8 @@ module Burdock
           maybe_node = find_node_on_line(children)
 
           if maybe_node
-            new_children = [constant, maybe_node]
+            new_child = process(maybe_node)
+            new_children = [constant, new_child]
             node.updated(nil, new_children)
           else
             node
