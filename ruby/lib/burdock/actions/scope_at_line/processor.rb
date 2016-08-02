@@ -18,9 +18,10 @@ module Burdock
         end
 
         # @param [AST::Node] node
-        # @return [AST::Node]
+        # @return [AST::Node] the original `begin` node or the node
+        #   found on {line_number}.
         # @note This is not responsible for processing Ruby's
-        # `begin` construct.
+        #   `begin` construct.
         def on_begin(node)
           children = node.children
           maybe_node = find_node_on_line(children)
@@ -37,7 +38,9 @@ module Burdock
         end
 
         # @param [AST::Node] node
-        # @return [AST::Node]
+        # @return [AST::Node] the original `class` node or a new
+        #   `class` node containing only the original constant nodes
+        #   and the child node found on {line_number}.
         def on_class(node)
           constants = node.children.take(2)
           children = node.children.drop(2)
@@ -54,7 +57,9 @@ module Burdock
         end
 
         # @param [AST::Node] node
-        # @return [AST::Node]
+        # @return [AST::Node] the original `module` node or a new
+        #   `module` node containing only the original constant node
+        #   and the child node found on {line_number}.
         def on_module(node)
           constant = node.children.first
           children = node.children.drop(1)
@@ -70,9 +75,11 @@ module Burdock
           end
         end
 
-        # @param [Array]
-        # @return [AST::Node]
-        # @return [nil]
+        # @param [Array] nodes
+        # @return [AST::Node] if a node on {line_number} could be
+        #   found.
+        # @return [nil] if a node on {line_number} could not be
+        #   found.
         def find_node_on_line(nodes)
           nodes.find do |node|
             case node
