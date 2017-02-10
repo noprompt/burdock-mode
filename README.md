@@ -3,6 +3,10 @@
 Burdock is an Emacs minor mode for Ruby which provides structured
 editing and evaluation operations.
 
+## Requirements
+
+Burdock requires the `inf-ruby` package.
+
 ## Installation
 
 Burdock is not available as an official package as of yet so it must
@@ -13,7 +17,7 @@ From the command line execute the following or similar commands.
 ```
 $ export BURDOCK_DIRECTORY=~/.emacs.d/lisp/burdock-mode
 $ cd $BURDOCK_DIRECTORY
-$ git clone https://github.com/noprompt/burdock-mode
+$ git clone https://github.com/noprompt/burdock-mode .
 $ cd ruby
 $ bundle install
 ```
