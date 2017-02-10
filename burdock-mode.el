@@ -1,4 +1,5 @@
 (require 'ruby-mode)
+(require 'subr-x)
 (require 'inf-ruby)
 (require 'json)
 
@@ -495,6 +496,29 @@ position with \"lambda do\" and \"end.call\" then reindent."
   (interactive)
   (let ((request (burdock-request "burdock/zip-right")))
     (burdock-send-request burdock-process request 'burdock-kill-region)))
+
+(defun burdock-forward-transpose ()
+  (interactive)
+  (let ((request (burdock-request "burdock/transpose-forward")))
+    (burdock-send-request burdock-process request
+			  (lambda (response-data)
+			    (message "%s" response-data)
+			    (when (burdock-success-response-p response-data)
+			      (let ((start-line (burdock-get-parameter 'start_line response-data))
+				    (end-line (burdock-get-parameter 'end_line response-data))
+				    (source (burdock-get-parameter 'source response-data)))
+				(when (and start-line end-line source)
+				  (let ((start-point (save-excursion
+						       (goto-line start-line)
+						       (point)))
+					(end-point (save-excursion
+						     (goto-line end-line)
+						     (end-of-line)
+						     (point))))
+				    (save-excursion
+				      (kill-region start-point end-point)
+				      (insert source))
+				    (burdock-zip-right)))))))))
 
 ;; ---------------------------------------------------------------------
 ;; burdock-s-expression
