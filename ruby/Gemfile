@@ -7,8 +7,8 @@ source "https://rubygems.org"
 # cannot rely on Bundler to require these gems for us.
 #
 # See lib/burdock/parser.rb and lib/burdock/unparser.rb
-gem "parser", require: false
-gem "unparser", require: false
+gem "parser", "2.5.0.3", require: false
+gem "unparser", "0.2.7 ", require: false
 gem "yajl-ruby"
 gem "yard"
 
